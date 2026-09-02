@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 240" role="img" aria-labelledby="title">
+  <title>B&G Shop logo</title>
+  <defs>
+    <radialGradient id="circleGradient" cx="0.35" cy="0.35" r="0.9">
+      <stop offset="0%" stop-color="#ff8b00" />
+      <stop offset="50%" stop-color="#ff3f95" />
+      <stop offset="100%" stop-color="#d6007c" />
+    </radialGradient>
+  </defs>
+  <rect width="240" height="240" rx="40" ry="40" fill="#070608" />
+  <circle cx="120" cy="110" r="92" fill="url(#circleGradient)" />
+  <path d="M70 102 C70 72 170 72 170 102 L170 132 C170 152 150 162 120 162 C90 162 70 152 70 132 Z" fill="#070608" />
+  <path d="M86 100 C86 80 106 80 106 100" stroke="#070608" stroke-width="12" stroke-linecap="round" fill="none" />
+  <path d="M134 100 C134 80 154 80 154 100" stroke="#070608" stroke-width="12" stroke-linecap="round" fill="none" />
+  <path d="M90 134 C106 154 134 154 150 134" stroke="#070608" stroke-width="10" stroke-linecap="round" fill="none" />
+  <text x="50%" y="219" fill="#f8f4ec" font-family="Segoe UI, sans-serif" font-size="24" font-weight="700" text-anchor="middle">B&G Shop</text>
+</svg>

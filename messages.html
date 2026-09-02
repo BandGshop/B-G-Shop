@@ -1,0 +1,521 @@
+<!DOCTYPE html>
+<html lang="fr">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>B&G Shop | Messages</title>
+        <link rel="stylesheet" href="styles.css" />
+        <style>
+            .navbar {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                padding: 1rem 2rem;
+                background: rgba(0, 0, 0, 0.3);
+                border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            }
+
+            .navbar-logo {
+                font-size: 1.5rem;
+                font-weight: bold;
+                color: var(--accent-2);
+            }
+
+            .navbar-links {
+                display: flex;
+                gap: 1.5rem;
+                align-items: center;
+            }
+
+            .navbar-links a {
+                color: var(--texte);
+                text-decoration: none;
+                transition: color 0.2s;
+            }
+
+            .navbar-links a:hover {
+                color: var(--accent-2);
+            }
+
+            #auth-container {
+                display: flex;
+                gap: 0.8rem;
+                align-items: center;
+                font-size: 0.9rem;
+            }
+
+            .messages-page {
+                width: min(1200px, 100%);
+                margin: 2rem auto;
+                padding: 0 2rem;
+            }
+
+            .messages-header {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                gap: 1rem;
+                margin-bottom: 1.5rem;
+            }
+
+            .messages-header h1 {
+                margin: 0;
+            }
+
+            .messages-container {
+                display: grid;
+                grid-template-columns: 320px 1fr;
+                gap: 0;
+                min-height: 620px;
+                border: 1px solid var(--bordure);
+                border-radius: 18px;
+                overflow: hidden;
+                background: rgba(255, 255, 255, 0.04);
+            }
+
+            .messages-sidebar {
+                background: rgba(255, 255, 255, 0.06);
+                border: 1px solid var(--bordure);
+                border-right: 1px solid var(--bordure);
+                padding: 1rem 0.75rem;
+                min-height: 620px;
+                background: rgba(0, 0, 0, 0.12);
+            }
+
+            .messages-sidebar h2 {
+                margin-top: 0;
+                margin-bottom: 1rem;
+                font-size: 1.1rem;
+            }
+
+            .thread-item {
+                padding: 1rem;
+                border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+                border: 1px solid transparent;
+                cursor: pointer;
+                transition: background 0.2s, border-color 0.2s;
+            }
+
+            .thread-item.active,
+            .thread-item:hover {
+                background: rgba(255, 63, 149, 0.14);
+                border-color: var(--accent-2);
+            }
+
+            .thread-title {
+                font-weight: 700;
+                margin-bottom: 0.35rem;
+            }
+
+            .thread-preview {
+                color: var(--texte-secondaire);
+                font-size: 0.9rem;
+                line-height: 1.4;
+                min-height: 2.6rem;
+            }
+
+            .thread-meta {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                margin-top: 0.65rem;
+                gap: 0.5rem;
+                font-size: 0.8rem;
+            }
+
+            .unread-badge {
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
+                min-width: 24px;
+                height: 24px;
+                border-radius: 999px;
+                background: var(--accent);
+                color: #070608;
+                font-size: 0.8rem;
+                font-weight: 700;
+            }
+
+            .messages-panel {
+                background: rgba(255, 255, 255, 0.55);
+                display: flex;
+                flex-direction: column;
+                min-height: 620px;
+                overflow: hidden;
+            }
+
+            #messages-interface {
+                display: flex;
+                flex-direction: column;
+                min-height: 620px;
+            }
+
+            .messages-thread-header {
+                padding: 1rem 1.25rem;
+                border-bottom: 1px solid var(--bordure);
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                gap: 1rem;
+                background: rgba(255, 255, 255, 0.05);
+            }
+
+            .messages-thread-header h2 {
+                margin: 0;
+                font-size: 1.1rem;
+            }
+
+            .messages-history {
+                padding: 1rem 1.25rem;
+                flex: 1;
+                overflow-y: auto;
+                display: grid;
+                gap: 1rem;
+                background: radial-gradient(circle at top right, rgba(255, 63, 149, 0.12), transparent 32%), #fff8f2;
+            }
+
+            .message-card {
+                max-width: 85%;
+                padding: 1rem 1.1rem;
+                border-radius: 16px;
+                background: #ffffff;
+                border: 1px solid rgba(87, 34, 20, 0.12);
+                box-shadow: 0 8px 20px rgba(87, 34, 20, 0.1);
+                position: relative;
+                line-height: 1.6;
+            }
+
+            .message-card.user {
+                margin-left: auto;
+                background: #ffd7e5;
+                border-color: rgba(206, 14, 88, 0.22);
+            }
+
+            .message-card.admin {
+                margin-right: auto;
+                background: #ffffff;
+            }
+
+            .message-meta {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                font-size: 0.8rem;
+                color: var(--texte-secondaire);
+                margin-bottom: 0.45rem;
+            }
+
+            .message-form {
+                padding: 1rem 1.25rem;
+                border-top: 1px solid var(--bordure);
+                background: rgba(0, 0, 0, 0.18);
+                display: flex;
+                gap: 0.75rem;
+                align-items: flex-end;
+            }
+
+            .message-form textarea {
+                width: 100%;
+                min-height: 52px;
+                max-height: 140px;
+                resize: vertical;
+                padding: 1rem;
+                border-radius: 14px;
+                border: 1px solid var(--bordure);
+                background: rgba(255, 255, 255, 0.08);
+                color: var(--texte);
+                font-size: 1rem;
+            }
+
+            .message-form button {
+                margin-top: 0;
+                width: auto;
+                min-width: 110px;
+            }
+
+            .empty-state,
+            .login-prompt {
+                padding: 2rem;
+                border-radius: 18px;
+                background: rgba(255, 255, 255, 0.07);
+                border: 1px solid var(--bordure);
+                text-align: center;
+            }
+
+            .login-prompt p {
+                margin: 0 0 1rem;
+                color: var(--texte-secondaire);
+            }
+
+            .login-prompt .btn {
+                width: auto;
+            }
+
+            @media (max-width: 900px) {
+                .messages-container {
+                    grid-template-columns: 1fr;
+                }
+
+                .messages-sidebar {
+                    min-height: auto;
+                    border-right: 0;
+                    border-bottom: 1px solid var(--bordure);
+                }
+
+                .messages-panel,
+                #messages-interface {
+                    min-height: 560px;
+                }
+
+                .message-form {
+                    flex-direction: column;
+                    align-items: stretch;
+                }
+
+                .message-form button {
+                    width: 100%;
+                }
+            }
+        </style>
+    </head>
+    <body>
+        <nav class="navbar">
+            <div class="navbar-logo">
+                <img src="logo.svg" alt="B&G Shop logo" class="site-logo" />
+                <span>B&G Shop</span>
+            </div>
+            <div class="navbar-links">
+                <a href="index.html">Accueil</a>
+                <a href="categories.html">Catégories</a>
+                <a href="messages.html">Messages</a>
+                <div id="auth-container"></div>
+            </div>
+        </nav>
+
+        <main class="messages-page">
+            <div class="messages-header">
+                <div>
+                    <h1>Messagerie</h1>
+                    <p>Échangez directement avec l'équipe B&G Shop.</p>
+                </div>
+            </div>
+
+            <div class="messages-container">
+                <aside class="messages-sidebar">
+                    <h2>Discussions</h2>
+                    <div id="thread-list"></div>
+                </aside>
+
+                <section class="messages-panel" id="messages-panel">
+                    <div id="no-login" class="login-prompt" style="display: none">
+                        <p>Vous devez être connecté pour accéder à votre messagerie.</p>
+                        <a class="btn btn-primaire" href="login.html">Se connecter</a>
+                    </div>
+
+                    <div id="messages-interface" style="display: none; width: 100%; height: 100%">
+                        <div class="messages-thread-header" id="messages-thread-header"></div>
+                        <div class="messages-history" id="messages-history"></div>
+                        <form class="message-form" id="message-form">
+                            <textarea id="message-input" placeholder="Écrivez votre message..." required></textarea>
+                            <button class="btn btn-primaire" type="submit">Envoyer</button>
+                        </form>
+                    </div>
+                </section>
+            </div>
+        </main>
+
+        <script src="js/app.js"></script>
+        <script>
+            let currentUser = null;
+            let currentThreadEmail = null;
+
+            document.addEventListener("DOMContentLoaded", () => {
+                currentUser = app.checkAuth();
+                updateAuthUI();
+                renderMessagesPage();
+
+                const form = document.getElementById("message-form");
+                if (form) {
+                    form.addEventListener("submit", handleMessageSubmit);
+                }
+            });
+
+            function renderMessagesPage() {
+                const loginPrompt = document.getElementById("no-login");
+                const interfacePanel = document.getElementById("messages-interface");
+                const threadList = document.getElementById("thread-list");
+
+                if (!currentUser) {
+                    loginPrompt.style.display = "block";
+                    interfacePanel.style.display = "none";
+                    threadList.innerHTML = "";
+                    return;
+                }
+
+                loginPrompt.style.display = "none";
+                interfacePanel.style.display = "flex";
+
+                if (currentUser.role === "admin") {
+                    renderAdminThreads();
+                } else {
+                    currentThreadEmail = currentUser.email;
+                    renderUserThread();
+                }
+            }
+
+            function renderAdminThreads() {
+                const threads = app.getAdminMessageThreads();
+                const threadList = document.getElementById("thread-list");
+                threadList.innerHTML = "";
+
+                if (threads.length === 0) {
+                    threadList.innerHTML = '<div class="empty-state">Aucune discussion pour le moment.</div>';
+                    renderEmptyThread();
+                    return;
+                }
+
+                threads.forEach((thread) => {
+                    const item = document.createElement("div");
+                    item.className = "thread-item" + (thread.userEmail === currentThreadEmail ? " active" : "");
+                    item.innerHTML = `
+                        <div class="thread-title">${thread.userName}</div>
+                        <div class="thread-preview">${thread.lastMessage.text.substring(0, 80)}${
+                        thread.lastMessage.text.length > 80 ? "…" : ""
+                    }</div>
+                        <div class="thread-meta">
+                            <span>${new Date(thread.lastMessage.createdDate).toLocaleDateString("fr-FR")}</span>
+                            ${thread.unreadCount > 0 ? `<span class="unread-badge">${thread.unreadCount}</span>` : ""}
+                        </div>
+                    `;
+                    item.addEventListener("click", () => {
+                        currentThreadEmail = thread.userEmail;
+                        renderAdminThreads();
+                        renderThreadMessages(thread.userEmail);
+                    });
+                    threadList.appendChild(item);
+                });
+
+                if (!currentThreadEmail) {
+                    currentThreadEmail = threads[0].userEmail;
+                }
+                renderThreadMessages(currentThreadEmail);
+            }
+
+            function renderUserThread() {
+                const threadList = document.getElementById("thread-list");
+                const messages = app.getMessagesForUser(currentUser.email);
+                const lastMessage = messages[messages.length - 1];
+                threadList.innerHTML = `
+                    <div class="thread-item active">
+                        <div class="thread-title">B&G Shop</div>
+                        <div class="thread-preview">${
+                            lastMessage ? lastMessage.text.substring(0, 80) : "Aucun message envoyé"
+                        }</div>
+                        <div class="thread-meta"><span>${messages.length} message${
+                    messages.length > 1 ? "s" : ""
+                }</span><span>Support</span></div>
+                    </div>
+                `;
+                app.markThreadReadByUser(currentUser.email);
+                renderThreadMessages(currentUser.email);
+            }
+
+            function renderThreadMessages(userEmail) {
+                const header = document.getElementById("messages-thread-header");
+                const history = document.getElementById("messages-history");
+                const messages = app.getMessagesForUser(userEmail);
+
+                if (currentUser.role === "admin") {
+                    const threadUser = app.getUserByEmail(userEmail);
+                    header.innerHTML = `
+                        <div>
+                            <h2>${threadUser ? threadUser.name : userEmail}</h2>
+                            <p>${userEmail}</p>
+                        </div>
+                    `;
+                    app.markThreadReadByAdmin(userEmail);
+                } else {
+                    header.innerHTML = `
+                        <div>
+                            <h2>Discussion avec B&G Shop</h2>
+                            <p>Support client interne</p>
+                        </div>
+                    `;
+                    app.markThreadReadByUser(currentUser.email);
+                }
+
+                if (messages.length === 0) {
+                    history.innerHTML =
+                        '<div class="empty-state">Aucun message pour le moment. Envoyez votre premier message ci-dessous.</div>';
+                } else {
+                    history.innerHTML = "";
+                    messages.forEach((message) => {
+                        const card = document.createElement("div");
+                        const isUserMessage = message.sender !== "admin";
+                        card.className = "message-card " + (isUserMessage ? "user" : "admin");
+                        let senderLabel = "Vous";
+
+                        if (currentUser.role === "admin") {
+                            senderLabel =
+                                message.sender === "admin"
+                                    ? "Support B&G"
+                                    : app.getUserByEmail(message.sender)?.name || message.sender;
+                        } else {
+                            senderLabel = message.sender === "admin" ? "Support B&G" : "Vous";
+                        }
+
+                        card.innerHTML = `
+                            <div class="message-meta">
+                                <span>${senderLabel}</span>
+                                <span>${new Date(message.createdDate).toLocaleString("fr-FR", {
+                                    hour: "2-digit",
+                                    minute: "2-digit",
+                                })}</span>
+                            </div>
+                            <div>${message.text.replace(/\n/g, "<br/>")}</div>
+                        `;
+                        history.appendChild(card);
+                    });
+                    history.scrollTop = history.scrollHeight;
+                }
+            }
+
+            function renderEmptyThread() {
+                const header = document.getElementById("messages-thread-header");
+                const history = document.getElementById("messages-history");
+                header.innerHTML = `
+                    <div>
+                        <h2>Bienvenue dans la messagerie</h2>
+                        <p>Sélectionnez une discussion à gauche pour répondre.</p>
+                    </div>
+                `;
+                history.innerHTML = '<div class="empty-state">Aucune discussion sélectionnée.</div>';
+            }
+
+            function handleMessageSubmit(event) {
+                event.preventDefault();
+                const input = document.getElementById("message-input");
+                const text = input.value.trim();
+                if (!text || !currentUser) {
+                    return;
+                }
+
+                const message = {
+                    sender: currentUser.role === "admin" ? "admin" : currentUser.email,
+                    receiver: currentUser.role === "admin" ? currentThreadEmail : "admin",
+                    userEmail: currentUser.role === "admin" ? currentThreadEmail : currentUser.email,
+                    text,
+                };
+
+                app.addMessage(message);
+                input.value = "";
+
+                if (currentUser.role === "admin") {
+                    renderAdminThreads();
+                } else {
+                    renderUserThread();
+                }
+            }
+        </script>
+    </body>
+</html>

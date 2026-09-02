@@ -1,0 +1,465 @@
+<!DOCTYPE html>
+<html lang="fr">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>B&G Shop | Détails du produit</title>
+        <link rel="stylesheet" href="styles.css" />
+        <style>
+            .navbar {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                padding: 1rem 2rem;
+                background: rgba(0, 0, 0, 0.3);
+                border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            }
+
+            .navbar-logo {
+                font-size: 1.5rem;
+                font-weight: bold;
+                color: var(--accent-2);
+            }
+
+            .navbar-links {
+                display: flex;
+                gap: 1.5rem;
+                align-items: center;
+            }
+
+            .navbar-links a {
+                color: var(--texte);
+                text-decoration: none;
+                transition: color 0.2s;
+            }
+
+            .navbar-links a:hover {
+                color: var(--accent-2);
+            }
+
+            #auth-container {
+                display: flex;
+                gap: 0.8rem;
+                align-items: center;
+                font-size: 0.9rem;
+            }
+
+            .product-detail-container {
+                width: min(1000px, 100%);
+                margin: 3rem auto;
+                padding: 0 2rem;
+                display: grid;
+                grid-template-columns: 1fr 1fr;
+                gap: 3rem;
+            }
+
+            .product-image-container {
+                display: flex;
+                align-items: center;
+                justify-content: center;
+            }
+
+            .product-image-large {
+                width: 100%;
+                max-width: 500px;
+                border-radius: 16px;
+                box-shadow: 0 20px 50px rgba(0, 0, 0, 0.3);
+            }
+
+            .product-details {
+                display: flex;
+                flex-direction: column;
+                justify-content: flex-start;
+            }
+
+            .product-category {
+                font-size: 0.9rem;
+                color: var(--accent-2);
+                text-transform: uppercase;
+                font-weight: 600;
+                margin-bottom: 0.5rem;
+            }
+
+            .product-title {
+                font-size: 2rem;
+                font-weight: 700;
+                margin: 0.5rem 0 1rem;
+                line-height: 1.2;
+            }
+
+            .product-price {
+                font-size: 1.8rem;
+                color: var(--accent);
+                font-weight: 700;
+                margin-bottom: 1.5rem;
+            }
+
+            .product-description {
+                color: var(--texte-secondaire);
+                line-height: 1.8;
+                margin-bottom: 2rem;
+            }
+
+            .action-buttons {
+                display: flex;
+                flex-direction: column;
+                gap: 1rem;
+                margin-bottom: 2rem;
+            }
+
+            .action-btn {
+                padding: 1rem;
+                border-radius: 12px;
+                border: none;
+                font-weight: 600;
+                font-size: 1rem;
+                cursor: pointer;
+                transition: transform 0.2s, box-shadow 0.2s;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                gap: 0.5rem;
+            }
+
+            .action-btn:hover {
+                transform: translateY(-2px);
+            }
+
+            .action-call {
+                background: linear-gradient(135deg, var(--accent), var(--accent-2));
+                color: white;
+            }
+
+            .action-call:hover {
+                box-shadow: 0 10px 25px rgba(255, 63, 149, 0.28);
+            }
+
+            .action-whatsapp {
+                background: linear-gradient(135deg, var(--accent), var(--accent-3));
+                color: white;
+            }
+
+            .action-whatsapp:hover {
+                box-shadow: 0 10px 25px rgba(255, 139, 0, 0.28);
+            }
+
+            .action-order {
+                background: linear-gradient(135deg, var(--accent), var(--accent-2));
+                color: white;
+            }
+
+            .action-order:hover {
+                box-shadow: 0 10px 25px rgba(255, 63, 149, 0.28);
+            }
+
+            .auth-required {
+                background: rgba(255, 63, 149, 0.12);
+                border: 1px solid rgba(255, 63, 149, 0.32);
+                border-radius: 8px;
+                padding: 1rem;
+                color: var(--accent-2);
+                margin-top: 1rem;
+                text-align: center;
+            }
+
+            .login-link {
+                color: var(--accent-2);
+                cursor: pointer;
+                text-decoration: underline;
+            }
+
+            .related-products {
+                width: min(1000px, 100%);
+                margin: 4rem auto;
+                padding: 0 2rem;
+            }
+
+            .related-grid {
+                display: grid;
+                grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+                gap: 1.5rem;
+                margin-top: 1.5rem;
+            }
+
+            .related-card {
+                border-radius: 12px;
+                background: rgba(255, 255, 255, 0.07);
+                border: 1px solid var(--bordure);
+                overflow: hidden;
+                cursor: pointer;
+                transition: transform 0.3s;
+            }
+
+            .related-card:hover {
+                transform: translateY(-5px);
+            }
+
+            .related-card img {
+                width: 100%;
+                height: 150px;
+                object-fit: cover;
+            }
+
+            .related-card-info {
+                padding: 1rem;
+            }
+
+            .related-card-title {
+                font-weight: 600;
+                margin-bottom: 0.3rem;
+            }
+
+            .related-card-price {
+                color: var(--accent);
+                font-weight: 700;
+            }
+
+            @media (max-width: 768px) {
+                .product-detail-container {
+                    grid-template-columns: 1fr;
+                    gap: 2rem;
+                }
+
+                .product-title {
+                    font-size: 1.5rem;
+                }
+
+                .action-buttons {
+                    flex-direction: column;
+                }
+            }
+        </style>
+    </head>
+    <body>
+        <!-- Navigation -->
+        <nav class="navbar">
+            <div class="navbar-logo">
+                <img src="logo.svg" alt="B&G Shop logo" class="site-logo" />
+                <span>B&G Shop</span>
+            </div>
+            <div class="navbar-links">
+                <a href="index.html">Accueil</a>
+                <a href="categories.html">Catégories</a>
+                <a href="messages.html">Messages</a>
+                <div id="auth-container"></div>
+            </div>
+        </nav>
+
+        <!-- Product Detail -->
+        <div class="product-detail-container" id="product-container">
+            <!-- Product will be loaded here -->
+        </div>
+
+        <!-- Related Products -->
+        <div class="related-products">
+            <h2>Articles similaires</h2>
+            <div class="related-grid" id="related-products">
+                <!-- Related products will be loaded here -->
+            </div>
+        </div>
+
+        <!-- Modal for Order -->
+        <div
+            id="order-modal"
+            style="
+                display: none;
+                position: fixed;
+                top: 0;
+                left: 0;
+                right: 0;
+                bottom: 0;
+                background: rgba(0, 0, 0, 0.7);
+                z-index: 1000;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+            "
+        >
+            <div style="background: var(--bg-2); border-radius: 16px; padding: 2rem; max-width: 500px; width: 90%">
+                <h2 style="margin-top: 0">Passer la commande</h2>
+                <form onsubmit="submitOrder(event)">
+                    <div class="form-group">
+                        <label for="order-name">Nom complet *</label>
+                        <input type="text" id="order-name" required />
+                    </div>
+                    <div class="form-group">
+                        <label for="order-phone">Numéro de téléphone *</label>
+                        <input type="tel" id="order-phone" required />
+                    </div>
+                    <div class="form-group">
+                        <label for="order-address">Adresse de livraison *</label>
+                        <textarea id="order-address" required></textarea>
+                    </div>
+                    <div style="display: flex; gap: 1rem">
+                        <button type="submit" class="btn btn-primaire" style="flex: 1">Envoyer la commande</button>
+                        <button type="button" onclick="closeOrderModal()" class="btn btn-secondaire" style="flex: 1">
+                            Annuler
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <script src="js/app.js"></script>
+        <script>
+            let currentProductId = null;
+
+            function getProductIdFromUrl() {
+                const params = new URLSearchParams(window.location.search);
+                return parseInt(params.get("id"));
+            }
+
+            function loadProductDetail() {
+                currentProductId = getProductIdFromUrl();
+                const product = app.getProduct(currentProductId);
+
+                if (!product) {
+                    document.getElementById("product-container").innerHTML =
+                        '<p style="grid-column: 1/-1; text-align: center;">Produit non trouvé</p>';
+                    return;
+                }
+
+                const user = app.checkAuth();
+
+                document.getElementById("product-container").innerHTML = `
+          <div class="product-image-container">
+            <img src="${product.image}" alt="${product.title}" class="product-image-large" />
+          </div>
+
+          <div class="product-details">
+            <div class="product-category">${product.category}</div>
+            <h1 class="product-title">${product.title}</h1>
+            <div class="product-price">${product.price} FCFA</div>
+            <p class="product-description">${product.description}</p>
+
+            <div class="action-buttons">
+              <button onclick="callSupport()" class="action-btn action-call">
+                📞 Appeler le support
+              </button>
+              <button onclick="contactWhatsApp()" class="action-btn action-whatsapp">
+                💬 Contacter via WhatsApp
+              </button>
+              <button onclick="${user ? "openOrderModal()" : "redirectToLogin()"}" class="action-btn action-order">
+                🛒 Passer la commande
+              </button>
+            </div>
+
+            ${
+                !user
+                    ? `
+              <div class="auth-required">
+                Vous devez être connecté pour passer une commande.
+                <a href="login.html" class="login-link">Se connecter</a>
+              </div>
+            `
+                    : ""
+            }
+          </div>
+        `;
+
+                loadRelatedProducts(product.category, product.id);
+            }
+
+            function loadRelatedProducts(category, excludeId) {
+                const products = app
+                .getProductsByCategory(category)
+                .filter((p) => p.id !== excludeId)
+                .slice(0, 4);
+
+                const container = document.getElementById("related-products");
+
+                if (products.length === 0) {
+                    container.innerHTML =
+                        '<p style="grid-column: 1/-1; text-align: center; color: var(--texte-secondaire);">Aucun article similaire</p>';
+                    return;
+                }
+
+                container.innerHTML = products
+                .map(
+                    (p) => `
+          <div class="related-card" onclick="window.location.href='product-detail.html?id=${p.id}'">
+            <img src="${p.image}" alt="${p.title}" />
+            <div class="related-card-info">
+              <div class="related-card-title">${p.title}</div>
+              <div class="related-card-price">${p.price} FCFA</div>
+            </div>
+          </div>
+        `
+                )
+                .join("");
+            }
+
+            function callSupport() {
+                const user = app.checkAuth();
+                if (!user) {
+                    alert("Veuillez vous connecter d'abord");
+                    window.location.href = "login.html";
+                    return;
+                }
+                // In a real app, this would trigger a call
+                alert("Appel au support B&G Shop...\n\nNuméro: +1-800-BG-SHOP");
+            }
+
+            function contactWhatsApp() {
+                const user = app.checkAuth();
+                if (!user) {
+                    alert("Veuillez vous connecter d'abord");
+                    window.location.href = "login.html";
+                    return;
+                }
+                // Open WhatsApp
+                const product = app.getProduct(currentProductId);
+                const message = `Bonjour, je suis intéressé par: ${product.title}`;
+                window.open(`https://wa.me/1234567890?text=${encodeURIComponent(message)}`);
+            }
+
+            function openOrderModal() {
+                document.getElementById("order-modal").style.display = "flex";
+            }
+
+            function closeOrderModal() {
+                document.getElementById("order-modal").style.display = "none";
+            }
+
+            function redirectToLogin() {
+                window.location.href = "login.html";
+            }
+
+            function submitOrder(e) {
+                e.preventDefault();
+
+                const user = app.checkAuth();
+                if (!user) {
+                    alert("Veuillez vous connecter");
+                    return;
+                }
+
+                const product = app.getProduct(currentProductId);
+
+                const order = {
+                    customerName: document.getElementById("order-name").value,
+                    customerPhone: document.getElementById("order-phone").value,
+                    customerAddress: document.getElementById("order-address").value,
+                    productId: currentProductId,
+                    productTitle: product.title,
+                    productPrice: product.price,
+                    userId: user.id,
+                    userEmail: user.email,
+                };
+
+                app.addOrder(order);
+
+                alert(
+                    "✓ Commande envoyée avec succès!\n\nLes administrateurs préparent votre commande et vous enverront une confirmation avec la date de livraison."
+                );
+                closeOrderModal();
+                document.getElementById("order-modal").querySelector("form").reset();
+            }
+
+            // Initialize
+            document.addEventListener("DOMContentLoaded", () => {
+                loadProductDetail();
+            });
+        </script>
+    </body>
+</html>

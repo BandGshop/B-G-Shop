@@ -1,0 +1,937 @@
+<!DOCTYPE html>
+<html lang="fr">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>B&G Shop | Admin</title>
+        <link rel="stylesheet" href="styles.css" />
+        <style>
+            .navbar {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                padding: 1rem 2rem;
+            }
+
+            .navbar-links {
+                display: flex;
+                gap: 1.5rem;
+                align-items: center;
+            }
+
+            .admin-container {
+                display: grid;
+                grid-template-columns: 250px 1fr;
+                min-height: 100vh;
+            }
+
+            .admin-sidebar {
+                background: rgba(0, 0, 0, 0.3);
+                border-right: 1px solid var(--bordure);
+                padding: 2rem 0;
+            }
+
+            .admin-sidebar a,
+            .admin-sidebar button {
+                display: block;
+                width: 100%;
+                padding: 1rem 1.5rem;
+                border: none;
+                background: none;
+                color: var(--texte);
+                text-align: left;
+                cursor: pointer;
+                transition: background 0.2s;
+                font-size: 1rem;
+            }
+
+            .admin-sidebar a:hover,
+            .admin-sidebar button:hover {
+                background: rgba(255, 255, 255, 0.1);
+                color: var(--accent-2);
+            }
+
+            .admin-sidebar .active {
+                background: rgba(255, 63, 149, 0.18);
+                color: var(--accent-2);
+                border-left: 3px solid var(--accent-2);
+            }
+
+            .admin-content {
+                padding: 2rem;
+                overflow-y: auto;
+            }
+
+            .admin-header {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                margin-bottom: 2rem;
+            }
+
+            .admin-header h1 {
+                margin: 0;
+            }
+
+            .admin-section {
+                display: none;
+            }
+
+            .admin-section.active {
+                display: block;
+            }
+
+            .dashboard-grid {
+                display: grid;
+                grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+                gap: 1.5rem;
+                margin-bottom: 2rem;
+            }
+
+            .stat-card {
+                padding: 1.5rem;
+                border-radius: 12px;
+                background: rgba(255, 255, 255, 0.07);
+                border: 1px solid var(--bordure);
+            }
+
+            .stat-card h3 {
+                margin: 0 0 0.5rem;
+                color: var(--texte-secondaire);
+                font-size: 0.9rem;
+                text-transform: uppercase;
+            }
+
+            .stat-value {
+                font-size: 2rem;
+                font-weight: 700;
+                color: var(--accent-2);
+            }
+
+            .form-card {
+                background: rgba(255, 255, 255, 0.07);
+                border: 1px solid var(--bordure);
+                border-radius: 12px;
+                padding: 2rem;
+                margin-bottom: 2rem;
+            }
+
+            .form-card h2 {
+                margin-top: 0;
+            }
+
+            .video-card {
+                background: rgba(255, 255, 255, 0.06);
+                border: 1px solid var(--bordure);
+                border-radius: 20px;
+                padding: 1.25rem;
+                overflow: hidden;
+            }
+
+            .video-card-header {
+                display: flex;
+                justify-content: space-between;
+                gap: 1rem;
+                align-items: center;
+                margin-bottom: 1rem;
+            }
+
+            .video-card-header h3 {
+                margin: 0;
+                font-size: 1.2rem;
+            }
+
+            .video-subtitle {
+                margin: 0.35rem 0 0;
+                color: var(--texte-secondaire);
+                font-size: 0.9rem;
+            }
+
+            .video-preview {
+                width: 100%;
+                border-radius: 18px;
+                background: #000;
+                box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.08);
+            }
+                .image-upload-options {
+                    display: grid;
+                    gap: 0.75rem;
+                }
+
+                .image-upload-divider {
+                    color: var(--texte-secondaire);
+                    font-size: 0.9rem;
+                    text-align: center;
+                }
+
+                .image-preview {
+                    display: none;
+                    width: 120px;
+                    height: 120px;
+                    object-fit: cover;
+                    border-radius: 8px;
+                    border: 1px solid var(--bordure);
+                }
+
+            .video-meta {
+                display: flex;
+                flex-wrap: wrap;
+                gap: 1rem;
+                color: var(--texte-secondaire);
+                margin-top: 0.85rem;
+                font-size: 0.95rem;
+            }
+
+            .video-actions {
+                display: flex;
+                flex-wrap: wrap;
+                gap: 0.75rem;
+                margin-top: 1rem;
+            }
+
+            .video-actions button {
+                padding: 0.75rem 1rem;
+                border-radius: 999px;
+                border: none;
+                cursor: pointer;
+                font-weight: 600;
+            }
+
+            .video-actions .btn-like {
+                background: rgba(255, 63, 149, 0.15);
+                color: var(--accent-2);
+            }
+
+            .video-actions .btn-comments {
+                background: rgba(255, 139, 0, 0.15);
+                color: var(--accent);
+            }
+
+            .comment-section {
+                margin-top: 1rem;
+                padding: 1rem;
+                border-radius: 18px;
+                background: rgba(255, 255, 255, 0.05);
+                border: 1px solid var(--bordure);
+            }
+
+            .comment-item {
+                padding: 0.85rem;
+                border-radius: 14px;
+                background: rgba(255, 255, 255, 0.08);
+                margin-bottom: 0.85rem;
+            }
+
+            .comment-item strong {
+                font-size: 0.95rem;
+                color: var(--accent-2);
+                display: block;
+                margin-bottom: 0.35rem;
+            }
+
+            .comment-form {
+                display: grid;
+                gap: 0.75rem;
+                margin-top: 0.75rem;
+            }
+
+            .comment-form textarea {
+                min-height: 90px;
+            }
+
+            .btn-comment-submit {
+                width: auto;
+                align-self: flex-end;
+            }
+
+            .form-group {
+                margin-bottom: 1.2rem;
+            }
+
+            .form-group label {
+                display: block;
+                margin-bottom: 0.5rem;
+                font-weight: 500;
+            }
+
+            .form-group input,
+            .form-group select,
+            .form-group textarea {
+                width: 100%;
+                padding: 0.8rem;
+                border-radius: 8px;
+                border: 1px solid var(--bordure);
+                background: rgba(255, 255, 255, 0.08);
+                color: var(--texte);
+                font-size: 1rem;
+                font-family: inherit;
+            }
+
+            .form-group textarea {
+                resize: vertical;
+                min-height: 100px;
+            }
+
+            .form-group input:focus,
+            .form-group select:focus,
+            .form-group textarea:focus {
+                outline: none;
+                border-color: var(--accent-2);
+                box-shadow: 0 0 0 3px rgba(255, 63, 149, 0.22);
+            }
+
+            .form-actions {
+                display: flex;
+                gap: 1rem;
+                margin-top: 1.5rem;
+            }
+
+            .orders-table {
+                width: 100%;
+                border-collapse: collapse;
+                background: rgba(255, 255, 255, 0.07);
+                border-radius: 12px;
+                overflow: hidden;
+            }
+
+            .orders-table th,
+            .orders-table td {
+                padding: 1rem;
+                text-align: left;
+                border-bottom: 1px solid var(--bordure);
+            }
+
+            .orders-table th {
+                background: rgba(255, 255, 255, 0.1);
+                font-weight: 600;
+            }
+
+            .status-badge {
+                display: inline-block;
+                padding: 0.3rem 0.8rem;
+                border-radius: 999px;
+                font-size: 0.8rem;
+                text-transform: uppercase;
+                font-weight: 600;
+            }
+
+            .status-pending {
+                background: rgba(255, 63, 149, 0.16);
+                color: var(--accent-2);
+            }
+
+            .status-completed {
+                background: rgba(255, 139, 0, 0.16);
+                color: var(--accent);
+            }
+
+            .success-message {
+                padding: 1rem;
+                background: rgba(255, 63, 149, 0.12);
+                border: 1px solid rgba(255, 63, 149, 0.35);
+                border-radius: 8px;
+                color: var(--accent-2);
+                margin-bottom: 1rem;
+            }
+
+            @media (max-width: 768px) {
+                .admin-container {
+                    grid-template-columns: 1fr;
+                }
+
+                .admin-sidebar {
+                    display: flex;
+                    border-bottom: 1px solid var(--bordure);
+                    border-right: none;
+                    overflow-x: auto;
+                }
+
+                .admin-sidebar a,
+                .admin-sidebar button {
+                    flex-shrink: 0;
+                }
+            }
+        </style>
+    </head>
+    <body>
+        <nav class="navbar">
+            <div class="navbar-logo">
+                <img src="images/bglogo.jpeg" alt="B&G Shop logo" class="site-logo" />
+                <span style="font-size: 1.5rem; font-weight: bold; color: var(--accent-2)">B&G Shop</span>
+            </div>
+            <div class="navbar-links">
+                <a href="index.html">Accueil</a>
+                <a href="categories.html">Catégories</a>
+                <a href="videos.html">Vidéos</a>
+                <a href="messages.html">Messages</a>
+                <div id="auth-container"></div>
+            </div>
+        </nav>
+
+        <div class="page-content">
+
+        <div class="admin-container">
+            <!-- Sidebar -->
+
+            <div class="admin-sidebar">
+                <div
+                    class="sidebar-brand"
+                    style="
+                        padding: 0 1.5rem 1.5rem;
+                        border-bottom: 1px solid rgba(255, 255, 255, 0.14);
+                        display: flex;
+                        align-items: center;
+                        gap: 0.75rem;
+                        margin-bottom: 1rem;
+                    "
+                >
+                    <img src="logo.svg" alt="B&G Shop logo" class="site-logo" style="width: 36px; height: 36px" />
+                    <span style="font-weight: 700; color: var(--texte)">B&G Shop</span>
+                </div>
+                <a href="index.html" style="padding-bottom: 1.5rem; border-bottom: 1px solid rgba(255, 255, 255, 0.14)"
+                    >← Retour à l'accueil</a
+                >
+                <button class="nav-btn active" onclick="switchSection('dashboard', this)">Tableau de bord</button>
+                <button class="nav-btn" onclick="switchSection('add-product', this)">Ajouter un article</button>
+                <button class="nav-btn" onclick="switchSection('manage-products', this)">Gérer les articles</button>
+                <button class="nav-btn" onclick="switchSection('orders', this)">Commandes</button>
+                <button class="nav-btn" onclick="switchSection('videos', this)">Vidéos</button>
+                <button class="nav-btn" onclick="window.location.href='messages.html'">Messages</button>
+                <button onclick="handleAdminLogout()" style="color: #ff6b6b; margin-top: 2rem">Déconnexion</button>
+            </div>
+
+            <!-- Content -->
+
+            <div class="admin-content">
+                <!-- Dashboard Section -->
+
+                <div id="dashboard" class="admin-section active">
+                    <div class="admin-header">
+                        <h1>Tableau de bord</h1>
+                    </div>
+
+                    <div class="dashboard-grid">
+                        <div class="stat-card">
+                            <h3>Total des articles</h3>
+                            <div class="stat-value" id="total-products">0</div>
+                        </div>
+                        <div class="stat-card">
+                            <h3>Articles en tendance</h3>
+                            <div class="stat-value" id="trending-products">0</div>
+                        </div>
+                        <div class="stat-card">
+                            <h3>Commandes en attente</h3>
+                            <div class="stat-value" id="pending-orders">0</div>
+                        </div>
+                        <div class="stat-card">
+                            <h3>Commandes complétées</h3>
+                            <div class="stat-value" id="completed-orders">0</div>
+                        </div>
+                        <div class="stat-card">
+                            <h3>Vidéos publiées</h3>
+                            <div class="stat-value" id="total-videos">0</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Add Product Section -->
+
+                <div id="add-product" class="admin-section">
+                    <div class="admin-header">
+                        <h1>Ajouter un nouvel article</h1>
+                    </div>
+
+                    <div id="success-message" class="success-message" style="display: none"></div>
+
+                    <div class="form-card">
+                        <form id="product-form" onsubmit="handleAddProduct(event)">
+                            <div class="form-group">
+                                <label for="product-title">Titre de l'article *</label>
+                                <input type="text" id="product-title" required />
+                            </div>
+
+                            <div class="form-group">
+                                <label for="product-category">Catégorie *</label>
+                                <select id="product-category">
+                                    <option value="">Sélectionner une catégorie</option>
+                                    <option value="Voitures" style="background-color: black">Voitures</option>
+                                    <option value="Animaux" style="background-color: black">Animaux</option>
+                                    <option value="Vêtements" style="background-color: black">Vêtements (Fashion)</option>
+                                    <option value="Chaussures" style="background-color: black">Chaussures (Fashion)</option>
+                                    <option value="Accessoires de beauté" style="background-color: black">
+                                        Accessoires de beauté (Esthétique)
+                                    </option>
+                                    <option value="Cosmétiques" style="background-color: black">Cosmétiques (Esthétique)</option>
+                                    <option value="Électronique" style="background-color: black">Électronique</option>
+                                </select>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="product-price">Prix (FCFA) *</label>
+                                <input type="number" id="product-price" step="0.01" required />
+                            </div>
+
+                            <div class="form-group">
+                                    <label for="product-image-file">Image de l'article *</label>
+                                    <div class="image-upload-options">
+                                        <input type="file" id="product-image-file" accept="image/*" />
+                                        <span class="image-upload-divider">ou</span>
+                                        <input
+                                            type="url"
+                                            id="product-image"
+                                            placeholder="https://example.com/image.jpg"
+                                        />
+                                        <img id="product-image-preview" class="image-preview" alt="Aperçu de l'image" />
+                                    </div>
+                                    <small style="color: var(--texte-secondaire)">Choisissez une image sur votre appareil ou collez son lien.</small>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="product-description">Description *</label>
+                                <textarea id="product-description" required></textarea>
+                            </div>
+
+                            <div class="form-group">
+                                <label>
+                                    <input type="checkbox" id="product-trending" />
+                                    Marquer comme article en tendance
+                                </label>
+                            </div>
+
+                            <div class="form-actions">
+                                <button type="submit" class="btn btn-primaire">Ajouter l'article</button>
+                                <button type="reset" class="btn btn-secondaire">Réinitialiser</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- Manage Products Section -->
+                <div id="manage-products" class="admin-section">
+                    <div class="admin-header">
+                        <h1>Gérer les articles</h1>
+                    </div>
+
+                    <div
+                        id="products-list"
+                        style="display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 1.5rem"
+                    >
+                        <!-- Products will be loaded here -->
+                    </div>
+                </div>
+
+                <!-- Orders Section -->
+                <div id="orders" class="admin-section">
+                    <div class="admin-header">
+                        <h1>Commandes</h1>
+                    </div>
+
+                    <table class="orders-table">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Client</th>
+                                <th>Téléphone</th>
+                                <th>Article</th>
+                                <th>Statut</th>
+                                <th>Date</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="orders-tbody">
+                            <!-- Orders will be loaded here -->
+                        </tbody>
+                    </table>
+                </div>
+
+                <div id="videos" class="admin-section">
+                    <div class="admin-header">
+                        <h1>Vidéos courtes</h1>
+                    </div>
+
+                    <div class="dashboard-grid">
+                        <div class="stat-card">
+                            <h3>Vidéos publiées</h3>
+                            <div class="stat-value" id="total-videos">0</div>
+                        </div>
+                        <div class="stat-card">
+                            <h3>Vues totales</h3>
+                            <div class="stat-value" id="total-video-views">0</div>
+                        </div>
+                        <div class="stat-card">
+                            <h3>Likes totaux</h3>
+                            <div class="stat-value" id="total-video-likes">0</div>
+                        </div>
+                        <div class="stat-card">
+                            <h3>Commentaires</h3>
+                            <div class="stat-value" id="total-video-comments">0</div>
+                        </div>
+                    </div>
+
+                    <div class="form-card">
+                        <h2>Publier une vidéo courte</h2>
+                        <form id="video-form" onsubmit="handleAddVideo(event)">
+                            <div class="form-group">
+                                <label for="video-title">Titre de la vidéo *</label>
+                                <input type="text" id="video-title" required />
+                            </div>
+                            <div class="form-group">
+                                <label for="video-description">Description *</label>
+                                <textarea id="video-description" required></textarea>
+                            </div>
+                            <div class="form-group">
+                                <label for="video-file">Fichier vidéo *</label>
+                                <input type="file" id="video-file" accept="video/*" required />
+                                <small style="color: var(--texte-secondaire);">Max 60 secondes. Le fichier sera compressé si possible.</small>
+                            </div>
+                            <div id="video-upload-message" class="success-message" style="display: none"></div>
+                            <div class="form-actions">
+                                <button type="submit" class="btn btn-primaire">Publier la vidéo</button>
+                                <button type="button" onclick="resetVideoForm()" class="btn btn-secondaire">Annuler</button>
+                            </div>
+                        </form>
+                    </div>
+
+                    <div id="video-list" style="display: grid; gap: 1.5rem;"></div>
+                </div>
+            </div>
+        </div>
+
+        <script src="js/app.js"></script>
+        <script>
+                        // Check if user is admin. If not, show a styled access message in admin content area.
+                        function checkAdminAccess() {
+                                const user = app.checkAuth();
+                                if (!user || user.role !== "admin") {
+                                        // hide sidebar and show access card
+                                        const sidebar = document.querySelector('.admin-sidebar');
+                                        if (sidebar) sidebar.style.display = 'none';
+
+                                        const content = document.querySelector('.admin-content');
+                                        if (content) {
+                                                content.innerHTML = `
+                                                    <section class="access-message">
+                                                        <div class="access-card">
+                                                            <h2>Accès réservé aux administrateurs</h2>
+                                                            <p>Vous devez être connecté en tant qu'administrateur pour consulter cette page.</p>
+                                                            <div class="access-actions">
+                                                                <a class="btn btn-primaire" href="login.html">Se connecter</a>
+                                                                <a class="btn btn-secondaire" href="index.html">Retour à l'accueil</a>
+                                                            </div>
+                                                        </div>
+                                                    </section>
+                                                `;
+                                        }
+
+                                        // Update the auth area
+                                        setTimeout(() => updateAuthUI(), 50);
+                                        return false;
+                                }
+                                return true;
+                        }
+
+            function switchSection(sectionId, button) {
+                // Hide all sections
+                document.querySelectorAll(".admin-section").forEach((s) => s.classList.remove("active"));
+                document.querySelectorAll(".nav-btn").forEach((b) => b.classList.remove("active"));
+
+                // Show selected section
+                document.getElementById(sectionId).classList.add("active");
+                if (button) button.classList.add("active");
+
+                // Load data based on section
+                if (sectionId === "dashboard") loadDashboard();
+                if (sectionId === "manage-products") loadProductsList();
+                if (sectionId === "orders") loadOrders();
+                if (sectionId === "videos") loadVideoManagement();
+            }
+
+            function loadDashboard() {
+                const data = app.getAdminDashboardData();
+                document.getElementById("total-products").textContent = app.getProducts().length;
+                document.getElementById("trending-products").textContent = app.getTrendingProducts().length;
+                document.getElementById("pending-orders").textContent = data.pendingOrders;
+                document.getElementById("completed-orders").textContent = data.completedOrders;
+                document.getElementById("total-videos").textContent = app.getVideos().length;
+            }
+
+            async function handleAddProduct(e) {
+                e.preventDefault();
+
+                const imageFile = document.getElementById("product-image-file").files[0];
+                const imageUrl = document.getElementById("product-image").value.trim();
+
+                if (!imageFile && !imageUrl) {
+                    document.getElementById("product-image").setCustomValidity("Importez une image ou saisissez une URL.");
+                    document.getElementById("product-image").reportValidity();
+                    return;
+                }
+
+                document.getElementById("product-image").setCustomValidity("");
+                const image = imageFile ? await readImageFile(imageFile) : imageUrl;
+
+                const product = {
+                    title: document.getElementById("product-title").value,
+                    category: document.getElementById("product-category").value,
+                    price: parseFloat(document.getElementById("product-price").value),
+                    image,
+                    description: document.getElementById("product-description").value,
+                    trending: document.getElementById("product-trending").checked,
+                };
+
+                app.addProduct(product);
+
+                // Show success message
+                const msg = document.getElementById("success-message");
+                msg.textContent = "✓ Article ajouté avec succès!";
+                msg.style.display = "block";
+
+                // Reset form
+                e.target.reset();
+
+                setTimeout(() => {
+                    msg.style.display = "none";
+                }, 3000);
+            }
+
+            function readImageFile(file) {
+                return new Promise((resolve, reject) => {
+                    const reader = new FileReader();
+                    reader.onload = () => resolve(reader.result);
+                    reader.onerror = () => reject(new Error("Impossible de lire l'image."));
+                    reader.readAsDataURL(file);
+                });
+            }
+
+            document.getElementById("product-image-file").addEventListener("change", (e) => {
+                const file = e.target.files[0];
+                const preview = document.getElementById("product-image-preview");
+
+                if (!file) {
+                    preview.removeAttribute("src");
+                    preview.style.display = "none";
+                    return;
+                }
+
+                preview.src = URL.createObjectURL(file);
+                preview.style.display = "block";
+            });
+
+            document.getElementById("product-form").addEventListener("reset", () => {
+                const preview = document.getElementById("product-image-preview");
+                preview.removeAttribute("src");
+                preview.style.display = "none";
+            });
+
+            function loadProductsList() {
+                const products = app.getProducts();
+                const container = document.getElementById("products-list");
+
+                container.innerHTML = products
+                .map(
+                    (p) => `
+          <div style="padding: 1rem; border-radius: 12px; background: rgba(255, 255, 255, 0.07); border: 1px solid var(--bordure);">
+            <img src="${
+                p.image
+            }" style="width: 100%; height: 150px; object-fit: cover; border-radius: 8px; margin-bottom: 1rem;" alt="${
+                        p.title
+                    }" />
+            <h3 style="margin: 0.5rem 0;">${p.title}</h3>
+            <p style="margin: 0.3rem 0; color: var(--texte-secondaire); font-size: 0.9rem;">${p.category}</p>
+            <p style="margin: 0.3rem 0; color: var(--accent); font-weight: 600;">${p.price} FCFA</p>
+            <p style="margin: 0.5rem 0; color: var(--texte-secondaire); font-size: 0.85rem;">${p.description.substring(
+                0,
+                80
+            )}...</p>
+            ${
+                p.trending
+                    ? '<span style="display: inline-block; padding: 0.3rem 0.6rem; background: var(--accent); border-radius: 4px; font-size: 0.75rem; margin-top: 0.5rem;">Tendance</span>'
+                    : ""
+            }
+            <div style="display: flex; gap: 0.5rem; margin-top: 1rem;">
+              <button onclick="deleteProduct(${
+                  p.id
+              })" class="btn btn-secondaire" style="flex: 1; padding: 0.5rem; font-size: 0.9rem;">Supprimer</button>
+            </div>
+          </div>
+        `
+                )
+                .join("");
+            }
+
+            function deleteProduct(productId) {
+                if (confirm("Êtes-vous sûr de vouloir supprimer cet article?")) {
+                    const products = app.getProducts().filter((p) => p.id !== productId);
+                    localStorage.setItem("bgshop_products", JSON.stringify(products));
+                    loadProductsList();
+                    loadDashboard();
+                }
+            }
+
+            function loadOrders() {
+                const orders = app.getOrders();
+                const tbody = document.getElementById("orders-tbody");
+
+                if (orders.length === 0) {
+                    tbody.innerHTML =
+                        '<tr><td colspan="7" style="text-align: center; padding: 2rem; color: var(--texte-secondaire);">Aucune commande pour le moment</td></tr>';
+                    return;
+                }
+
+                tbody.innerHTML = orders
+                .map(
+                    (order) => `
+          <tr>
+            <td>#${order.id}</td>
+            <td>${order.customerName}</td>
+            <td>${order.customerPhone}</td>
+            <td>${order.productTitle}</td>
+            <td>
+              <span class="status-badge status-${order.status}">
+                ${order.status === "pending" ? "En attente" : "Complétée"}
+              </span>
+            </td>
+            <td>${new Date(order.createdDate).toLocaleDateString("fr-FR")}</td>
+            <td>
+              <button onclick="updateOrderStatus(${order.id}, '${
+                        order.status === "pending" ? "completed" : "pending"
+                    }')" class="btn btn-primaire" style="padding: 0.4rem 0.8rem; font-size: 0.85rem;">
+                ${order.status === "pending" ? "Complétée" : "Attente"}
+              </button>
+            </td>
+          </tr>
+        `
+                )
+                .join("");
+            }
+
+            function loadVideoManagement() {
+                const videos = app.getVideos().slice().sort((a, b) => new Date(b.postedDate) - new Date(a.postedDate));
+                const list = document.getElementById("video-list");
+                const totalViews = videos.reduce((sum, video) => sum + (video.views?.length || 0), 0);
+                const totalLikes = videos.reduce((sum, video) => sum + (video.likes?.length || 0), 0);
+                const totalComments = videos.reduce((sum, video) => sum + (video.comments?.length || 0), 0);
+
+                document.getElementById("total-videos").textContent = videos.length;
+                document.getElementById("total-video-views").textContent = totalViews;
+                document.getElementById("total-video-likes").textContent = totalLikes;
+                document.getElementById("total-video-comments").textContent = totalComments;
+
+                if (videos.length === 0) {
+                    list.innerHTML = '<div class="empty-state">Aucune vidéo publiée pour le moment.</div>';
+                    return;
+                }
+
+                list.innerHTML = videos
+                    .map(
+                        (video) => `
+                            <div class="video-card">
+                                <div class="video-card-header">
+                                    <div>
+                                        <h3>${video.title}</h3>
+                                        <p class="video-subtitle">Publiée le ${new Date(video.postedDate).toLocaleDateString("fr-FR")}</p>
+                                    </div>
+                                    <button class="btn btn-secondaire" onclick="deleteVideo(${video.id})">Supprimer</button>
+                                </div>
+                                <video controls class="video-preview" src="${video.videoUrl}"></video>
+                                <p style="margin: 1rem 0 0.5rem; color: var(--texte-secondaire);">${video.description}</p>
+                                <div class="video-meta">
+                                    <span>${video.views?.length || 0} vues</span>
+                                    <span>${video.likes?.length || 0} likes</span>
+                                    <span>${video.comments?.length || 0} commentaires</span>
+                                </div>
+                            </div>
+                        `
+                    )
+                    .join("");
+            }
+
+            async function handleAddVideo(event) {
+                event.preventDefault();
+                const title = document.getElementById("video-title").value.trim();
+                const description = document.getElementById("video-description").value.trim();
+                const fileInput = document.getElementById("video-file");
+                const file = fileInput.files[0];
+                const message = document.getElementById("video-upload-message");
+
+                if (!title || !description || !file) {
+                    message.style.display = "block";
+                    message.textContent = "Veuillez remplir tous les champs et sélectionner une vidéo.";
+                    return;
+                }
+
+                if (!file.type.startsWith("video/")) {
+                    message.style.display = "block";
+                    message.textContent = "Le fichier doit être une vidéo valide.";
+                    return;
+                }
+
+                try {
+                    message.style.display = "block";
+                    message.textContent = "Compression et chargement en cours...";
+
+                    const compressedFile = await app.compressVideoFile(file);
+                    const videoUrl = await app.getVideoDataURL(compressedFile);
+
+                    app.addVideo({
+                        title,
+                        description,
+                        videoUrl,
+                        originalName: file.name,
+                        duration: compressedFile.duration || null,
+                    });
+
+                    message.textContent = "Vidéo publiée avec succès !";
+                    message.style.background = "rgba(81, 207, 102, 0.12)";
+                    message.style.borderColor = "rgba(81, 207, 102, 0.35)";
+                    document.getElementById("video-form").reset();
+                    loadVideoManagement();
+                    loadDashboard();
+                } catch (error) {
+                    message.style.display = "block";
+                    message.textContent = error.message || "Impossible de charger la vidéo.";
+                    message.style.background = "rgba(255, 63, 149, 0.12)";
+                    message.style.borderColor = "rgba(255, 63, 149, 0.35)";
+                }
+            }
+
+            function deleteVideo(videoId) {
+                if (!confirm("Supprimer cette vidéo ?")) {
+                    return;
+                }
+                const videos = app.getVideos().filter((video) => video.id !== videoId);
+                localStorage.setItem("bgshop_videos", JSON.stringify(videos));
+                loadVideoManagement();
+                loadDashboard();
+            }
+
+            function resetVideoForm() {
+                document.getElementById("video-form").reset();
+                const message = document.getElementById("video-upload-message");
+                message.style.display = "none";
+            }
+
+            function updateOrderStatus(orderId, newStatus) {
+                const orders = app.getOrders();
+                const order = orders.find((o) => o.id === orderId);
+                if (order) {
+                    order.status = newStatus;
+                    localStorage.setItem("bgshop_orders", JSON.stringify(orders));
+                    loadOrders();
+                    loadDashboard();
+                }
+            }
+
+            function handleAdminLogout() {
+                app.logout();
+                window.location.href = "login.html";
+            }
+
+            // Initialize app data and then check admin access
+            app.init();
+            if (checkAdminAccess()) {
+                loadDashboard();
+            }
+        </script>
+    </body>
+</html>

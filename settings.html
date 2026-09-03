@@ -48,7 +48,7 @@
         </section>
         <section class="settings-section" id="admin">
           <h2 data-i18n="adminTools">Outils admin</h2>
-          <div class="settings-admin-card" id="ad-management"><h3>Gestion de la barre de publicité</h3><p>Sélectionnez plusieurs vidéos. Elles seront lues automatiquement l'une après l'autre, sans son.</p><div id="ad-video-list" class="settings-grid"></div><button class="btn btn-primaire" id="save-ad-videos" type="button">Enregistrer la sélection publicitaire</button><div id="ad-status"></div></div>
+          <div class="settings-admin-card" id="ad-management"><h3>Gestion de la barre de publicité</h3><p>Sélectionnez plusieurs vidéos. Elles seront lues automatiquement l'une après l'autre, sans son.</p><form class="settings-form" id="ad-upload-form"><label>Importer des vidéos publicitaires<input id="ad-video-upload" type="file" accept="video/*" multiple required></label><button class="btn btn-primaire" type="submit">Importer les vidéos</button></form><div id="ad-upload-status"></div><div id="ad-video-list" class="settings-grid"></div><button class="btn btn-primaire" id="save-ad-videos" type="button">Enregistrer la sélection publicitaire</button><div id="ad-status"></div></div>
           <div class="settings-admin-card"><h3 data-i18n="changePassword">Changer le mot de passe admin</h3><form class="settings-form" id="password-form"><input id="current-password" type="password" placeholder="Mot de passe actuel" required><input id="new-password" type="password" placeholder="Nouveau mot de passe" minlength="6" required><button class="btn btn-primaire" data-i18n="change">Modifier</button></form><div id="password-status"></div></div>
           <div class="settings-admin-card"><h3 data-i18n="notify">Notifier tous les utilisateurs</h3><form class="settings-form" id="notification-form"><input id="notification-title" placeholder="Titre" required><textarea id="notification-text" placeholder="Message, promotion ou mise à jour" required></textarea><button class="btn btn-primaire" data-i18n="send">Envoyer la notification</button></form><div id="notification-status"></div></div>
           <div class="settings-admin-card"><h3 data-i18n="help">Aide</h3><p data-i18n="helpText">Demandes envoyées par les utilisateurs.</p><div id="help-list"></div></div>
@@ -83,6 +83,20 @@
     function readFile(input) { return input.files[0] ? app.getVideoDataURL(input.files[0]) : Promise.resolve(''); }
     function renderHelp() { const requests = app.getMessages().filter((message) => message.receiver === 'admin'); $('help-list').innerHTML = requests.length ? requests.map((message) => `<article class="settings-item"><strong>${message.userEmail}</strong><p>${message.text}</p><small>${new Date(message.createdDate).toLocaleString()}</small></article>`).join('') : '<p class="settings-empty">Aucune demande.</p>'; }
     function renderAdManagement() { const selected = app.getAdVideoIds(); const videos = app.getVideos(); $('ad-video-list').innerHTML = videos.length ? videos.map((video) => `<label class="settings-item settings-choice"><input type="checkbox" value="${video.id}" ${selected.includes(video.id) ? 'checked' : ''}><span>${video.title}</span></label>`).join('') : '<p class="settings-empty">Aucune vidéo publiée.</p>'; }
+    async function importAdVideos(event) {
+      event.preventDefault(); const files = [...$('ad-video-upload').files]; const status = $('ad-upload-status'); const adVideoIds = app.getAdVideoIds();
+      if (!files.length) return;
+      status.textContent = 'Importation en cours...';
+      try {
+        for (const file of files) {
+          if (!file.type.startsWith('video/')) continue;
+          const compressedFile = await app.compressVideoFile(file); const videoUrl = await app.getVideoDataURL(compressedFile);
+          const video = app.addVideo({ title: file.name.replace(/\.[^/.]+$/, ''), description: 'Vidéo publicitaire B&G Shop', videoUrl, originalName: file.name, duration: compressedFile.duration || null });
+          if (!adVideoIds.includes(video.id)) adVideoIds.push(video.id);
+        }
+        app.setAdVideoIds(adVideoIds); renderAdManagement(); $('ad-upload-form').reset(); status.textContent = 'Vidéos importées et ajoutées à la barre publicitaire.';
+      } catch (error) { status.textContent = error.message || 'Impossible d’importer les vidéos.'; }
+    }
     document.addEventListener('DOMContentLoaded', async () => {
       if (!requireUser()) return; settings = app.getUserSettings(user.email); app.applyUserSettings(settings); applyLanguage(settings.language); $('language').value = settings.language; $('site-bg-type').value = settings.siteBackground.type; $('message-bg-type').value = settings.messageBackground.type; $('admin-settings-tab').style.display = user.role === 'admin' ? 'block' : 'none'; renderContent(); toggleOptions('site'); toggleOptions('message'); if (user.role === 'admin') { renderHelp(); renderAdManagement(); }
       document.querySelectorAll('.settings-nav button').forEach((button) => button.addEventListener('click', () => { document.querySelectorAll('.settings-nav button, .settings-section').forEach((element) => element.classList.remove('active')); button.classList.add('active'); $(button.dataset.section).classList.add('active'); }));
@@ -90,6 +104,7 @@
       $('appearance-form').addEventListener('submit', async (event) => { event.preventDefault(); const siteImage = await readFile($('site-bg-image')); const messageImage = await readFile($('message-bg-image')); settings = { language: $('language').value, siteBackground: { type: $('site-bg-type').value, value: siteImage || ($('site-bg-type').value === 'image' ? settings.siteBackground.value : $('site-bg-color').value) }, messageBackground: { type: $('message-bg-type').value, value: messageImage || ($('message-bg-type').value === 'image' ? settings.messageBackground.value : $('message-bg-color').value) } }; app.saveUserSettings(user.email, settings); applyLanguage(settings.language); $('appearance-status').textContent = 'Préférences enregistrées.'; });
       $('password-form').addEventListener('submit', (event) => { event.preventDefault(); $('password-status').textContent = app.changeAdminPassword(user.email, $('current-password').value, $('new-password').value) ? 'Mot de passe modifié.' : 'Mot de passe actuel incorrect.'; });
       $('notification-form').addEventListener('submit', (event) => { event.preventDefault(); app.addNotification({ title: $('notification-title').value, text: $('notification-text').value }); $('notification-status').textContent = 'Notification envoyée à tous les utilisateurs.'; event.target.reset(); });
+      $('ad-upload-form').addEventListener('submit', importAdVideos);
       $('save-ad-videos').addEventListener('click', () => { const ids = [...$('ad-video-list').querySelectorAll('input:checked')].map((input) => Number(input.value)); app.setAdVideoIds(ids); $('ad-status').textContent = 'Barre de publicité mise à jour.'; });
     });
   </script>

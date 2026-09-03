@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="fr">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>B&G Shop | Vidéos</title>
+        <link rel="stylesheet" href="styles.css" />
+        <style>
+            .navbar {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                padding: 1rem 2rem;
+                background: rgba(0, 0, 0, 0.3);
+                border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            }
+
+            .navbar-logo {
+                display: flex;
+                align-items: center;
+                gap: 0.6rem;
+                color: var(--accent-2);
+                font-size: 1.5rem;
+                font-weight: bold;
+            }
+
+            .navbar-links {
+                display: flex;
+                gap: 1.5rem;
+                align-items: center;
+            }
+
+            .navbar-links a {
+                color: var(--texte);
+                text-decoration: none;
+                transition: color 0.2s;
+            }
+
+            .navbar-links a:hover {
+                color: var(--accent-2);
+            }
+
+            #auth-container {
+                display: flex;
+                gap: 0.8rem;
+                align-items: center;
+                font-size: 0.9rem;
+            }
+
+            .videos-page {
+                width: min(1200px, 100%);
+                margin: 2rem auto;
+                padding: 0 2rem 3rem;
+            }
+
+            .videos-header {
+                margin-bottom: 1.5rem;
+            }
+
+            .videos-header h1 {
+                margin: 0;
+            }
+
+            .videos-grid {
+                display: grid;
+                grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+                gap: 1.5rem;
+            }
+
+            .video-card {
+                overflow: hidden;
+                border: 1px solid var(--bordure);
+                border-radius: 18px;
+                background: rgba(255, 255, 255, 0.06);
+            }
+
+            .video-card video {
+                display: block;
+                width: 100%;
+                aspect-ratio: 16 / 10;
+                background: #08070a;
+                object-fit: contain;
+            }
+
+            .video-card-content {
+                padding: 1rem 1.1rem 1.2rem;
+            }
+
+            .video-card h2 {
+                margin: 0 0 0.45rem;
+                font-size: 1.15rem;
+            }
+
+            .video-card p {
+                margin: 0;
+                color: var(--texte-secondaire);
+                line-height: 1.5;
+            }
+
+            .video-date {
+                display: block;
+                margin-top: 0.9rem;
+                color: var(--accent-2);
+                font-size: 0.8rem;
+            }
+
+            .empty-videos {
+                padding: 3rem 1rem;
+                border: 1px dashed var(--bordure);
+                color: var(--texte-secondaire);
+                text-align: center;
+            }
+
+            @media (max-width: 700px) {
+                .navbar {
+                    flex-direction: column;
+                    gap: 1rem;
+                    padding: 1rem;
+                }
+
+                .navbar-links {
+                    flex-wrap: wrap;
+                    justify-content: center;
+                    gap: 0.8rem 1rem;
+                }
+
+                .videos-page {
+                    padding-right: 1rem;
+                    padding-left: 1rem;
+                }
+            }
+        </style>
+    </head>
+    <body>
+        <nav class="navbar">
+            <div class="navbar-logo">
+                <img src="logo.svg" alt="B&G Shop logo" class="site-logo" />
+                <span>B&G Shop</span>
+            </div>
+            <div class="navbar-links">
+                <a href="index.html">Accueil</a>
+                <a href="categories.html">Catégories</a>
+                <a href="videos.html">Vidéos</a>
+                <a href="messages.html">Messages</a>
+                <div id="auth-container"></div>
+            </div>
+        </nav>
+
+        <main class="videos-page">
+            <header class="videos-header">
+                <p class="eyebrow">B&G Shop</p>
+                <h1>Nos vidéos</h1>
+                <p>Découvrez les dernières vidéos publiées par B&G Shop.</p>
+            </header>
+            <section id="videos-grid" class="videos-grid" aria-live="polite"></section>
+        </main>
+
+        <script src="js/app.js"></script>
+        <script>
+            document.addEventListener("DOMContentLoaded", () => {
+                const videos = app.getVideos().slice().sort((a, b) => new Date(b.postedDate) - new Date(a.postedDate));
+                const grid = document.getElementById("videos-grid");
+                updateAuthUI();
+
+                if (videos.length === 0) {
+                    grid.innerHTML = '<p class="empty-videos">Aucune vidéo publiée pour le moment.</p>';
+                    return;
+                }
+
+                grid.innerHTML = videos.map((video) => `
+                    <article class="video-card">
+                        <video controls preload="metadata" src="${video.videoUrl}" aria-label="${video.title}"></video>
+                        <div class="video-card-content">
+                            <h2>${video.title}</h2>
+                            <p>${video.description}</p>
+                            <span class="video-date">Publiée le ${new Date(video.postedDate).toLocaleDateString("fr-FR")}</span>
+                        </div>
+                    </article>
+                `).join("");
+            });
+        </script>
+    </body>
+</html>

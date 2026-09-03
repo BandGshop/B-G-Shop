@@ -198,6 +198,23 @@ const app = {
     return this.getVideos().find((video) => video.id === videoId);
   },
 
+  getFavoriteVideoIds(userEmail) {
+    if (!userEmail) return [];
+    return JSON.parse(localStorage.getItem(`bgshop_favorites_${userEmail}`) || '[]');
+  },
+
+  toggleVideoFavorite(videoId, userEmail) {
+    const favorites = this.getFavoriteVideoIds(userEmail);
+    const favoriteIndex = favorites.indexOf(videoId);
+    if (favoriteIndex >= 0) {
+      favorites.splice(favoriteIndex, 1);
+    } else {
+      favorites.push(videoId);
+    }
+    localStorage.setItem(`bgshop_favorites_${userEmail}`, JSON.stringify(favorites));
+    return favorites.includes(videoId);
+  },
+
   addVideo(video) {
     const videos = this.getVideos();
     video.id = Math.max(...videos.map((v) => v.id || 0), 0) + 1;

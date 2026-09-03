@@ -334,6 +334,10 @@
             <p class="product-description">${product.description}</p>
 
             <div class="action-buttons">
+                            ${user ? `
+                            <button onclick="toggleProductCollection('liked')" class="action-btn action-call" id="like-product-btn">♥ J'aime</button>
+                            <button onclick="toggleProductCollection('favorites')" class="action-btn action-whatsapp" id="favorite-product-btn">★ Favori</button>
+                            ` : ''}
               <button onclick="callSupport()" class="action-btn action-call">
                 📞 Appeler le support
               </button>
@@ -424,6 +428,15 @@
 
             function redirectToLogin() {
                 window.location.href = "login.html";
+            }
+
+            function toggleProductCollection(key) {
+                const user = app.checkAuth();
+                if (!user) return redirectToLogin();
+                const active = app.toggleProductCollection(currentProductId, user.email, key);
+                const button = document.getElementById(key === 'liked' ? 'like-product-btn' : 'favorite-product-btn');
+                button.classList.toggle('active', active);
+                button.textContent = active ? (key === 'liked' ? '♥ Aimé' : '★ Favori') : (key === 'liked' ? "♥ J'aime" : '★ Favori');
             }
 
             function submitOrder(e) {

@@ -28,6 +28,66 @@ body {
   background-attachment: fixed;
 }
 
+body[data-site-background="color"] {
+  background: var(--user-site-background, var(--bg));
+}
+
+body[data-site-background="image"],
+body[data-site-background="system"] {
+  background-image: var(--user-site-image), linear-gradient(135deg, #f8d6a5, #ff4d9d, #f9c8d1);
+  background-size: cover;
+  background-position: center;
+  background-attachment: fixed;
+}
+
+.settings-page {
+  width: min(1180px, 100%);
+  margin: 0 auto;
+  padding: 3rem 2rem 5rem;
+}
+
+.settings-header { margin-bottom: 2rem; }
+.settings-header h1 { margin-bottom: 0.3rem; }
+.settings-layout { display: grid; grid-template-columns: 230px 1fr; gap: 1.5rem; align-items: start; }
+.settings-nav, .settings-panel, .settings-item, .settings-admin-card {
+  background: rgba(255, 255, 255, 0.3);
+  border: 1px solid var(--bordure);
+  border-radius: 12px;
+}
+.settings-nav { padding: 0.65rem; display: grid; gap: 0.35rem; }
+.settings-nav button { border: 0; background: transparent; text-align: left; padding: 0.8rem; color: inherit; cursor: pointer; border-radius: 8px; font: inherit; }
+.settings-nav button.active, .settings-nav button:hover { background: rgba(206, 14, 88, 0.13); color: var(--accent-2); }
+.settings-panel { padding: 1.5rem; min-height: 520px; }
+.settings-section { display: none; }
+.settings-section.active { display: block; }
+.settings-section h2 { margin-top: 0; }
+.settings-form { display: grid; gap: 1rem; max-width: 680px; }
+.settings-form label { display: grid; gap: 0.35rem; font-weight: 600; }
+.settings-form input, .settings-form select, .settings-form textarea { width: 100%; padding: 0.75rem; border: 1px solid var(--bordure); border-radius: 8px; background: rgba(255,255,255,0.52); color: var(--texte); font: inherit; }
+.settings-form input[type="color"] { height: 48px; padding: 0.25rem; }
+.settings-form input[type="file"] { padding: 0.5rem; }
+.settings-choice { display: flex; gap: 0.65rem; align-items: center; font-weight: 400; }
+.settings-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1rem; }
+.settings-item { padding: 1rem; }
+.settings-item h3 { margin: 0.6rem 0 0.25rem; }
+.settings-item img { width: 100%; height: 130px; object-fit: cover; border-radius: 8px; }
+.settings-empty { color: var(--texte-secondaire); padding: 1rem 0; }
+.settings-admin-card { padding: 1rem; margin-top: 1rem; }
+.settings-notice { margin-top: 1rem; padding: 0.75rem; border-radius: 8px; background: rgba(40, 150, 80, 0.16); }
+
+.messages-page {
+  background: var(--user-message-background, transparent);
+  background-image: var(--user-message-image);
+  background-size: cover;
+  background-position: center;
+}
+
+@media (max-width: 760px) {
+  .settings-layout { grid-template-columns: 1fr; }
+  .settings-nav { display: flex; overflow-x: auto; }
+  .settings-nav button { white-space: nowrap; }
+}
+
 /* Navbar fixed */
 .navbar {
   position: fixed;

@@ -92,6 +92,10 @@ const app = {
     if (!localStorage.getItem('bgshop_videos')) {
       localStorage.setItem('bgshop_videos', JSON.stringify([]));
     }
+
+    if (!localStorage.getItem('bgshop_notifications')) {
+      localStorage.setItem('bgshop_notifications', JSON.stringify([]));
+    }
   },
 
   // Authentication management
@@ -154,6 +158,46 @@ const app = {
 
   getProduct(id) {
     return this.getProducts().find(p => p.id === id);
+  },
+
+  getUserSettings(userEmail) {
+    const defaults = {
+      language: 'fr',
+      siteBackground: { type: 'default', value: '' },
+      messageBackground: { type: 'default', value: '' }
+    };
+    if (!userEmail) return defaults;
+    return { ...defaults, ...(JSON.parse(localStorage.getItem(`bgshop_settings_${userEmail}`) || '{}')) };
+  },
+
+  saveUserSettings(userEmail, settings) {
+    if (!userEmail) return;
+    localStorage.setItem(`bgshop_settings_${userEmail}`, JSON.stringify(settings));
+    this.applyUserSettings(settings);
+  },
+
+  applyUserSettings(settings) {
+    const site = settings?.siteBackground || {};
+    const message = settings?.messageBackground || {};
+    const deviceColor = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? '#241b27' : '#fff2ea';
+    document.body.dataset.siteBackground = site.type || 'default';
+    document.body.style.setProperty('--user-site-background', site.type === 'color' ? site.value : deviceColor);
+    document.body.style.setProperty('--user-site-image', site.type === 'image' ? `url(${site.value})` : '');
+    document.body.style.setProperty('--user-message-background', message.type === 'color' ? message.value : '');
+    document.body.style.setProperty('--user-message-image', message.type === 'image' ? `url(${message.value})` : '');
+  },
+
+  getUserProductIds(userEmail, key) {
+    return JSON.parse(localStorage.getItem(`bgshop_product_${key}_${userEmail}`) || '[]');
+  },
+
+  toggleProductCollection(productId, userEmail, key) {
+    if (!userEmail) return false;
+    const ids = this.getUserProductIds(userEmail, key);
+    const index = ids.indexOf(productId);
+    if (index >= 0) ids.splice(index, 1); else ids.push(productId);
+    localStorage.setItem(`bgshop_product_${key}_${userEmail}`, JSON.stringify(ids));
+    return ids.includes(productId);
   },
 
   addProduct(product) {
@@ -439,12 +483,34 @@ const app = {
 
   getUnreadMessagesCountForUser(userEmail) {
     return this.getMessages().filter((m) => m.userEmail === userEmail && m.receiver === userEmail && !m.isReadByUser).length;
+  },
+
+  getNotifications() {
+    return JSON.parse(localStorage.getItem('bgshop_notifications') || '[]');
+  },
+
+  addNotification(notification) {
+    const notifications = this.getNotifications();
+    notifications.unshift({ ...notification, id: Date.now(), createdDate: new Date().toISOString() });
+    localStorage.setItem('bgshop_notifications', JSON.stringify(notifications));
+  },
+
+  changeAdminPassword(email, currentPassword, newPassword) {
+    const users = JSON.parse(localStorage.getItem('bgshop_users'));
+    const admin = users.find((user) => user.email === email && user.role === 'admin');
+    if (!admin || admin.password !== currentPassword) return false;
+    admin.password = newPassword;
+    localStorage.setItem('bgshop_users', JSON.stringify(users));
+    localStorage.setItem('bgshop_currentUser', JSON.stringify(admin));
+    return true;
   }
 };
 
 // Initialize app on page load
 document.addEventListener('DOMContentLoaded', () => {
   app.init();
+  const user = app.checkAuth();
+  if (user) app.applyUserSettings(app.getUserSettings(user.email));
   updateAuthUI();
 });
 
@@ -457,6 +523,7 @@ function updateAuthUI() {
     if (user) {
       authContainer.innerHTML = `
         <span>Bienvenue, ${user.name}</span>
+        <a href="settings.html" class="btn btn-secondaire">Paramètres</a>
         <button onclick="handleLogout()" class="btn btn-secondaire">Déconnexion</button>
         ${user.role === 'admin' ? '<a href="admin.html" class="btn btn-primaire">Admin</a>' : ''}
       `;

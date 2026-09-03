@@ -96,6 +96,9 @@ const app = {
     if (!localStorage.getItem('bgshop_notifications')) {
       localStorage.setItem('bgshop_notifications', JSON.stringify([]));
     }
+    if (!localStorage.getItem('bgshop_ad_videos')) {
+      localStorage.setItem('bgshop_ad_videos', JSON.stringify([]));
+    }
   },
 
   // Authentication management
@@ -236,6 +239,14 @@ const app = {
 
   getVideos() {
     return JSON.parse(localStorage.getItem('bgshop_videos'));
+  },
+
+  getAdVideoIds() {
+    return JSON.parse(localStorage.getItem('bgshop_ad_videos') || '[]');
+  },
+
+  setAdVideoIds(videoIds) {
+    localStorage.setItem('bgshop_ad_videos', JSON.stringify(videoIds));
   },
 
   getVideoById(videoId) {
@@ -511,8 +522,54 @@ document.addEventListener('DOMContentLoaded', () => {
   app.init();
   const user = app.checkAuth();
   if (user) app.applyUserSettings(app.getUserSettings(user.email));
+  enhanceNavigation();
+  renderAdvertisingBar();
   updateAuthUI();
 });
+
+function enhanceNavigation() {
+  const navbar = document.querySelector('.navbar');
+  if (!navbar || navbar.querySelector('.burger-button')) return;
+  const menu = document.createElement('div');
+  menu.className = 'burger-menu';
+  menu.innerHTML = `<button class="burger-button" type="button" aria-label="Ouvrir le menu" aria-expanded="false">☰</button>
+    <div class="burger-panel"><a href="index.html">Accueil</a><a href="categories.html">Catégories</a><a href="videos.html">Vidéos</a><a href="messages.html">Messages</a><a href="settings.html">Paramètres</a></div>`;
+  navbar.prepend(menu);
+  const button = menu.querySelector('.burger-button');
+  button.addEventListener('click', () => {
+    const open = menu.classList.toggle('open');
+    button.setAttribute('aria-expanded', String(open));
+  });
+}
+
+function renderAdvertisingBar() {
+  if (document.querySelector('.ad-bar')) return;
+  const bar = document.createElement('section');
+  bar.className = 'ad-bar';
+  document.body.classList.add('has-ad-bar');
+  bar.setAttribute('aria-label', 'Publicité B&G Shop');
+  document.body.prepend(bar);
+  const videos = app.getVideos().filter((video) => app.getAdVideoIds().includes(video.id));
+  if (!videos.length) {
+    const logoImage = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="520" height="120" viewBox="0 0 520 120"%3E%3Crect width="520" height="120" fill="%231e101b"/%3E%3Ctext x="260" y="78" text-anchor="middle" font-family="Georgia,serif" font-size="58" font-weight="bold" fill="%23ffd65d"%3EB%26amp%3BG Shop%3C/text%3E%3C/svg%3E';
+    bar.innerHTML = `<div class="ad-empty-light"><img src="${logoImage}" alt="B&G Shop"></div>`;
+    return;
+  }
+  const video = document.createElement('video');
+  video.muted = true;
+  video.autoplay = true;
+  video.playsInline = true;
+  video.controls = false;
+  video.src = videos[0].videoUrl;
+  let current = 0;
+  video.addEventListener('ended', () => {
+    current = (current + 1) % videos.length;
+    video.src = videos[current].videoUrl;
+    video.play().catch(() => {});
+  });
+  bar.appendChild(video);
+  video.play().catch(() => {});
+}
 
 // Update auth UI
 function updateAuthUI() {

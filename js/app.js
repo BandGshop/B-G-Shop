@@ -544,11 +544,12 @@ function enhanceNavigation() {
 
 function renderAdvertisingBar() {
   if (document.querySelector('.ad-bar')) return;
+  const navbar = document.querySelector('.navbar');
+  if (!navbar) return;
   const bar = document.createElement('section');
   bar.className = 'ad-bar';
-  document.body.classList.add('has-ad-bar');
   bar.setAttribute('aria-label', 'Publicité B&G Shop');
-  document.body.prepend(bar);
+  navbar.appendChild(bar);
   const videos = app.getVideos().filter((video) => app.getAdVideoIds().includes(video.id));
   if (!videos.length) {
     const logoImage = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="520" height="120" viewBox="0 0 520 120"%3E%3Crect width="520" height="120" fill="%231e101b"/%3E%3Ctext x="260" y="78" text-anchor="middle" font-family="Georgia,serif" font-size="58" font-weight="bold" fill="%23ffd65d"%3EB%26amp%3BG Shop%3C/text%3E%3C/svg%3E';
@@ -580,8 +581,6 @@ function updateAuthUI() {
     if (user) {
       authContainer.innerHTML = `
         <span>Bienvenue, ${user.name}</span>
-        <a href="settings.html" class="btn btn-secondaire">Paramètres</a>
-        <button onclick="handleLogout()" class="btn btn-secondaire">Déconnexion</button>
         ${user.role === 'admin' ? '<a href="admin.html" class="btn btn-primaire">Admin</a>' : ''}
       `;
     } else {

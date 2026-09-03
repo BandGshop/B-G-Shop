@@ -552,8 +552,7 @@ function renderAdvertisingBar() {
   navbar.appendChild(bar);
   const videos = app.getVideos().filter((video) => app.getAdVideoIds().includes(video.id));
   if (!videos.length) {
-    const logoImage = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="520" height="120" viewBox="0 0 520 120"%3E%3Crect width="520" height="120" fill="%231e101b"/%3E%3Ctext x="260" y="78" text-anchor="middle" font-family="Georgia,serif" font-size="58" font-weight="bold" fill="%23ffd65d"%3EB%26amp%3BG Shop%3C/text%3E%3C/svg%3E';
-    bar.innerHTML = `<div class="ad-empty-light"><img src="${logoImage}" alt="B&G Shop"></div>`;
+    bar.innerHTML = '<div class="ad-empty-light"><img src="images/ad-placeholder.svg" alt="B&amp;G Shop"></div>';
     return;
   }
   const video = document.createElement('video');

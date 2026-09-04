@@ -414,7 +414,7 @@
                 }
                 // Open WhatsApp
                 const product = app.getProduct(currentProductId);
-                const message = `Bonjour, je suis intéressé par: ${product.title}`;
+                const message = `Bonjour, je suis intéressé par: ${product.title}. Ce produit est-il encore disponible?`;
                 window.open(`https://wa.me/+242069404839?text=${encodeURIComponent(message)}`);
             }
 

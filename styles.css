@@ -289,6 +289,62 @@ body.has-global-taskbar {
   padding-bottom: 4.5rem;
 }
 
+/* Shared spacing for pages below the fixed navbar. */
+.categories-header,
+.categories-container,
+.product-detail-container,
+.related-products,
+.messages-page,
+.settings-page,
+.admin-container,
+.cart-page {
+  max-width: 100%;
+}
+
+.categories-header {
+  padding-top: 7rem !important;
+}
+
+.categories-container {
+  padding-bottom: 2rem;
+}
+
+.product-detail-container {
+  margin-top: 7rem !important;
+}
+
+.related-products {
+  margin-top: 2rem;
+}
+
+.messages-page {
+  margin-top: 0;
+  padding-top: 7rem;
+}
+
+.settings-page {
+  padding-top: 7rem;
+}
+
+.admin-container {
+  padding-top: 6rem;
+}
+
+.cart-page {
+  padding-top: 7rem !important;
+}
+
+.orders-table-wrap,
+.orders-table {
+  max-width: 100%;
+  overflow-x: auto;
+}
+
+.orders-table {
+  display: block;
+  white-space: nowrap;
+}
+
 .product-actions {
   display: flex;
   gap: .5rem;
@@ -325,12 +381,158 @@ body.has-global-taskbar {
 }
 
 @media (max-width: 760px) {
+  .navbar {
+    min-height: 72px;
+    gap: .5rem;
+    padding: .55rem .75rem !important;
+  }
+
+  .navbar-logo {
+    gap: .45rem;
+  }
+
+  .navbar-logo span {
+    display: none;
+  }
+
+  .site-logo {
+    width: 32px;
+    height: 32px;
+  }
+
+  .navbar-links {
+    max-width: calc(100% - 52px);
+  }
+
+  #auth-container {
+    gap: .35rem !important;
+    min-width: 0;
+  }
+
+  .login-link {
+    padding: .45rem .55rem;
+    font-size: .82rem;
+    white-space: nowrap;
+  }
+
+  .profile-chip {
+    min-width: 0;
+    font-size: .82rem;
+  }
+
+  .profile-chip>span:last-child {
+    max-width: 80px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .admin-space-button {
+    padding: .5rem .6rem;
+    font-size: .78rem;
+    white-space: nowrap;
+  }
+
+  .categories-header {
+    padding: 6rem 1rem 1.5rem !important;
+  }
+
+  .categories-container {
+    padding: 0 1rem 2rem;
+  }
+
+  .product-detail-container {
+    margin-top: 5.5rem !important;
+    padding: 0 1rem;
+    gap: 1.25rem;
+  }
+
+  .related-products {
+    padding: 0 1rem;
+    margin-top: 1.5rem;
+  }
+
+  .messages-page {
+    padding: 5.5rem .75rem 1rem;
+  }
+
+  .settings-page {
+    padding: 5.5rem 1rem 5rem;
+  }
+
+  .admin-container {
+    padding-top: 4.5rem;
+  }
+
+  .admin-content {
+    padding: 1rem;
+  }
+
+  .form-card {
+    padding: 1rem;
+  }
+
+  .form-actions {
+    flex-wrap: wrap;
+  }
+
+  .form-actions .btn {
+    flex: 1 1 140px;
+  }
+
+  .action-btn {
+    overflow-wrap: anywhere;
+  }
+
+  .cart-item {
+    align-items: flex-start;
+    flex-wrap: wrap;
+  }
+
+  .cart-item-info {
+    min-width: calc(100% - 100px);
+  }
+
+  .cart-remove {
+    margin-left: auto;
+  }
+
   .global-taskbar a {
     min-width: 57px;
   }
 
   .global-taskbar {
     gap: 0;
+  }
+}
+
+@media (max-width: 420px) {
+  .global-taskbar a {
+    min-width: 20%;
+    padding-inline: .15rem;
+    font-size: .65rem;
+  }
+
+  .global-taskbar strong {
+    font-size: 1rem;
+  }
+
+  .profile-avatar {
+    width: 32px;
+    height: 32px;
+  }
+
+  .login-link {
+    font-size: .75rem;
+  }
+
+  .product-actions {
+    gap: .35rem;
+  }
+
+  .product-action {
+    padding-inline: .35rem;
+    font-size: .72rem;
   }
 }
 

@@ -20,13 +20,8 @@
 body {
   margin: 0;
   font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
-  color: var(--texte);
-  background:
-    radial-gradient(circle at 15% 20%, rgba(255, 141, 0, 0.9), transparent 18%),
-    radial-gradient(circle at 82% 12%, rgba(255, 67, 155, 0.88), transparent 19%),
-    radial-gradient(circle at 80% 78%, rgba(255, 186, 61, 0.55), transparent 20%),
-    radial-gradient(circle at 18% 82%, rgba(255, 59, 150, 0.35), transparent 17%),
-    linear-gradient(135deg, #f8d6a5 0%, #ff9f43 20%, #ff4d9d 42%, #ff7b2f 66%, #f9c8d1 100%);
+  color: var(--ink);
+  background: radial-gradient(circle at 100% 0%, #d9f1e9, transparent 35%), #f5f8f6;
   line-height: 1.6;
   background-attachment: fixed;
 }
@@ -231,21 +226,112 @@ body[data-site-background="system"] {
 }
 
 .navbar-logo {
-  order: 1;
-  margin-left: 0;
+  order: 2 !important;
+  margin-left: auto !important;
   flex: 0 0 auto;
 }
 
 .navbar-links {
-  order: 4;
+  order: 1 !important;
   display: flex;
   align-items: center;
   gap: 0.8rem;
-  margin-left: auto;
+  margin-left: 0 !important;
 }
 
 .navbar-links>a {
-  display: none;
+  display: none !important;
+}
+
+.burger-menu,
+.ad-bar {
+  display: none !important;
+}
+
+.global-taskbar {
+  position: fixed;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  z-index: 900;
+  display: flex;
+  justify-content: center;
+  gap: .25rem;
+  padding: .55rem max(1rem, env(safe-area-inset-left)) calc(.55rem + env(safe-area-inset-bottom));
+  background: rgba(255, 255, 255, .96);
+  border-top: 1px solid var(--line);
+  box-shadow: 0 -5px 18px rgba(27, 51, 49, .1);
+}
+
+.global-taskbar a {
+  display: grid;
+  min-width: 82px;
+  justify-items: center;
+  gap: .1rem;
+  padding: .3rem .55rem;
+  border-radius: 7px;
+  color: var(--muted);
+  font-size: .72rem;
+}
+
+.global-taskbar a:hover,
+.global-taskbar a.active {
+  background: #e8f5f1;
+  color: #078575;
+}
+
+.global-taskbar strong {
+  font-size: 1.2rem;
+  line-height: 1;
+}
+
+body.has-global-taskbar {
+  padding-bottom: 4.5rem;
+}
+
+.product-actions {
+  display: flex;
+  gap: .5rem;
+  margin-top: .7rem;
+}
+
+.product-action {
+  flex: 1;
+  padding: .45rem .55rem;
+  border: 1px solid #b9ded7;
+  border-radius: 6px;
+  background: #effaf7;
+  color: #087f72;
+  cursor: pointer;
+  font: inherit;
+  font-size: .82rem;
+  font-weight: 700;
+}
+
+.product-action.active {
+  background: #087f72;
+  color: #fff;
+}
+
+.product-action[aria-label="Ajouter aux favoris"] {
+  color: #b34b68;
+  border-color: #e6b8c5;
+  background: #fff5f7;
+}
+
+.product-action[aria-label="Ajouter aux favoris"].active {
+  background: #b34b68;
+  color: #fff;
+}
+
+@media (max-width: 760px) {
+  .global-taskbar a {
+    min-width: 57px;
+  }
+
+  .global-taskbar {
+    gap: 0;
+  }
 }
 
 .burger-menu {

@@ -335,8 +335,8 @@
 
             <div class="action-buttons">
                             ${user ? `
-                            <button onclick="toggleProductCollection('liked')" class="action-btn action-call" id="like-product-btn">♥ J'aime</button>
-                            <button onclick="toggleProductCollection('favorites')" class="action-btn action-whatsapp" id="favorite-product-btn">★ Favori</button>
+                            <button onclick="toggleProductCollection('liked')" class="action-btn action-call" id="like-product-btn" aria-label="J'aime">👍</button>
+                            <button onclick="toggleProductCollection('favorites')" class="action-btn action-whatsapp" id="favorite-product-btn" aria-label="Ajouter aux favoris">♡</button>
                             ` : ''}
               <button onclick="callSupport()" class="action-btn action-call">
                 📞 Appeler le support
@@ -361,6 +361,11 @@
             }
           </div>
         `;
+
+                const liked = user && app.getUserProductIds(user.email, "liked").includes(currentProductId);
+                const favorite = user && app.getUserProductIds(user.email, "favorites").includes(currentProductId);
+                document.getElementById("like-product-btn")?.classList.toggle("active", Boolean(liked));
+                document.getElementById("favorite-product-btn")?.classList.toggle("active", Boolean(favorite));
 
                 loadRelatedProducts(product.category, product.id);
             }
@@ -436,7 +441,7 @@
                 const active = app.toggleProductCollection(currentProductId, user.email, key);
                 const button = document.getElementById(key === 'liked' ? 'like-product-btn' : 'favorite-product-btn');
                 button.classList.toggle('active', active);
-                button.textContent = active ? (key === 'liked' ? '♥ Aimé' : '★ Favori') : (key === 'liked' ? "♥ J'aime" : '★ Favori');
+                button.textContent = key === 'liked' ? '👍' : (active ? '♥' : '♡');
             }
 
             function submitOrder(e) {

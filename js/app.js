@@ -540,52 +540,49 @@ document.addEventListener('DOMContentLoaded', () => {
   enhanceNavigation();
   renderAdvertisingBar();
   updateAuthUI();
+  renderGlobalTaskbar();
 });
 
 function enhanceNavigation() {
-  if (document.body.classList.contains('market-page')) return;
-  const navbar = document.querySelector('.navbar');
-  if (!navbar || navbar.querySelector('.burger-button')) return;
-  const menu = document.createElement('div');
-  menu.className = 'burger-menu';
-  menu.innerHTML = `<button class="burger-button" type="button" aria-label="Ouvrir le menu" aria-expanded="false">☰</button>
-    <div class="burger-panel"><a href="index.html">Accueil</a><a href="categories.html">Catégories</a><a href="videos.html">Vidéos</a><a href="messages.html">Messages</a><a href="settings.html">Paramètres</a></div>`;
-  navbar.prepend(menu);
-  const button = menu.querySelector('.burger-button');
-  button.addEventListener('click', () => {
-    const open = menu.classList.toggle('open');
-    button.setAttribute('aria-expanded', String(open));
-  });
+  return;
 }
 
 function renderAdvertisingBar() {
-  if (document.body.classList.contains('market-page')) return;
-  if (document.querySelector('.ad-bar')) return;
-  const navbar = document.querySelector('.navbar');
-  if (!navbar) return;
-  const bar = document.createElement('section');
-  bar.className = 'ad-bar';
-  bar.setAttribute('aria-label', 'Publicité B&G Shop');
-  navbar.appendChild(bar);
-  const videos = app.getVideos().filter((video) => app.getAdVideoIds().includes(video.id));
-  if (!videos.length) {
-    bar.innerHTML = '<div class="ad-empty-light"><img src="images/ad-placeholder.svg" alt="B&amp;G Shop"></div>';
-    return;
-  }
-  const video = document.createElement('video');
-  video.muted = true;
-  video.autoplay = true;
-  video.playsInline = true;
-  video.controls = false;
-  video.src = videos[0].videoUrl;
-  let current = 0;
-  video.addEventListener('ended', () => {
-    current = (current + 1) % videos.length;
-    video.src = videos[current].videoUrl;
-    video.play().catch(() => { });
-  });
-  bar.appendChild(video);
-  video.play().catch(() => { });
+  return;
+}
+
+function renderGlobalTaskbar() {
+  if (!document.querySelector('.navbar') || document.querySelector('.global-taskbar') || document.body.classList.contains('market-page')) return;
+  const currentPage = window.location.pathname.split('/').pop() || 'index.html';
+  const taskbar = document.createElement('nav');
+  taskbar.className = 'global-taskbar';
+  taskbar.setAttribute('aria-label', 'Navigation principale');
+  taskbar.innerHTML = `<a class="${currentPage === 'index.html' ? 'active' : ''}" href="index.html"><strong>⌂</strong><span>Accueil</span></a>
+    <a class="${currentPage === 'videos.html' ? 'active' : ''}" href="videos.html"><strong>▶</strong><span>Réel</span></a>
+    <a class="${currentPage === 'panier.html' ? 'active' : ''}" href="panier.html"><strong>▢</strong><span>Panier</span></a>
+    <a class="${currentPage === 'messages.html' ? 'active' : ''}" href="messages.html"><strong>◌</strong><span>Messages</span></a>
+    <a class="${currentPage === 'settings.html' ? 'active' : ''}" href="settings.html"><strong>⚙</strong><span>Paramètres</span></a>`;
+  document.body.appendChild(taskbar);
+  document.body.classList.add('has-global-taskbar');
+}
+
+function productActionsMarkup(productId) {
+  const user = app.checkAuth();
+  const liked = user && app.getUserProductIds(user.email, 'liked').includes(productId);
+  const favorite = user && app.getUserProductIds(user.email, 'favorites').includes(productId);
+  return `<div class="product-actions">
+    <button class="product-action ${liked ? 'active' : ''}" aria-label="J'aime" aria-pressed="${Boolean(liked)}" onclick="event.stopPropagation(); toggleProductCardCollection(${productId}, 'liked', this)">👍</button>
+    <button class="product-action ${favorite ? 'active' : ''}" aria-label="Ajouter aux favoris" aria-pressed="${Boolean(favorite)}" onclick="event.stopPropagation(); toggleProductCardCollection(${productId}, 'favorites', this)">♡</button>
+  </div>`;
+}
+
+function toggleProductCardCollection(productId, key, button) {
+  const user = app.checkAuth();
+  if (!user) { window.location.href = 'login.html'; return; }
+  const active = app.toggleProductCollection(productId, user.email, key);
+  button.classList.toggle('active', active);
+  button.setAttribute('aria-pressed', String(active));
+  button.textContent = key === 'liked' ? '👍' : (active ? '♥' : '♡');
 }
 
 // Update auth UI

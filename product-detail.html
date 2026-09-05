@@ -271,7 +271,6 @@
                 bottom: 0;
                 background: rgba(0, 0, 0, 0.7);
                 z-index: 1000;
-                display: flex;
                 align-items: center;
                 justify-content: center;
             "
@@ -335,8 +334,8 @@
 
             <div class="action-buttons">
                             ${user ? `
-                            <button onclick="toggleProductCollection('liked')" class="action-btn action-call" id="like-product-btn" aria-label="J'aime">👍</button>
-                            <button onclick="toggleProductCollection('favorites')" class="action-btn action-whatsapp" id="favorite-product-btn" aria-label="Ajouter aux favoris">♡</button>
+                            <button onclick="toggleProductCollection('liked')" class="action-btn action-call" id="like-product-btn" aria-label="J'aime">👍 J'aime</button>
+                            <button onclick="toggleProductCollection('favorites')" class="action-btn action-whatsapp" id="favorite-product-btn" aria-label="Ajouter aux favoris">♡ Ajouter aux favoris</button>
                             ` : ''}
               <button onclick="callSupport()" class="action-btn action-call">
                 📞 Appeler le support
@@ -401,6 +400,7 @@
 
             function callSupport() {
                 const user = app.checkAuth();
+                app.recordProductView(currentProductId, user);
                 if (!user) {
                     alert("Veuillez vous connecter d'abord");
                     window.location.href = "login.html";
@@ -441,7 +441,7 @@
                 const active = app.toggleProductCollection(currentProductId, user.email, key);
                 const button = document.getElementById(key === 'liked' ? 'like-product-btn' : 'favorite-product-btn');
                 button.classList.toggle('active', active);
-                button.textContent = key === 'liked' ? '👍' : (active ? '♥' : '♡');
+                button.textContent = key === 'liked' ? '👍 J’aime' : (active ? '♥ Ajouté aux favoris' : '♡ Ajouter aux favoris');
             }
 
             function submitOrder(e) {

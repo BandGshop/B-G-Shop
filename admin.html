@@ -743,6 +743,12 @@
                 0,
                 80
             )}...</p>
+                        <div style="margin-top: 0.8rem; padding: 0.7rem; border-radius: 8px; background: rgba(8, 127, 114, 0.08);">
+                            <strong>${(p.views || []).length} vue${(p.views || []).length > 1 ? 's' : ''}</strong>
+                            <div style="margin-top: 0.35rem; color: var(--texte-secondaire); font-size: 0.82rem;">
+                                ${(p.views || []).length ? p.views.map((view) => `<div>${view.name} (${view.userEmail})</div>`).join('') : 'Aucun compte n’a encore vu cet article.'}
+                            </div>
+                        </div>
             ${
                 p.trending
                     ? '<span style="display: inline-block; padding: 0.3rem 0.6rem; background: var(--accent); border-radius: 4px; font-size: 0.75rem; margin-top: 0.5rem;">Tendance</span>'

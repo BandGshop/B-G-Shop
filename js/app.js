@@ -76,7 +76,8 @@ const app = {
       };
       const normalizedProducts = products.map((product) => ({
         ...product,
-        category: legacyCategoryNames[product.category] || product.category
+        category: legacyCategoryNames[product.category] || product.category,
+        views: Array.isArray(product.views) ? product.views : []
       }));
       localStorage.setItem('bgshop_products', JSON.stringify(normalizedProducts));
     }
@@ -162,6 +163,23 @@ const app = {
 
   getProduct(id) {
     return this.getProducts().find(p => p.id === id);
+  },
+
+  recordProductView(productId, user) {
+    if (!user) return null;
+    const products = this.getProducts();
+    const product = products.find((item) => item.id === productId);
+    if (!product) return null;
+    product.views = Array.isArray(product.views) ? product.views : [];
+    if (!product.views.some((view) => view.userEmail === user.email)) {
+      product.views.push({
+        userEmail: user.email,
+        name: user.name,
+        date: new Date().toISOString()
+      });
+      localStorage.setItem('bgshop_products', JSON.stringify(products));
+    }
+    return product;
   },
 
   getCart() {

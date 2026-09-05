@@ -1,0 +1,460 @@
+<!DOCTYPE html>
+<html lang="fr">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>B&G Shop | Vidéos</title>
+        <link rel="stylesheet" href="styles.css" />
+        <style>
+            .navbar {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                padding: 1rem 2rem;
+                background: rgba(0, 0, 0, 0.3);
+                border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            }
+
+            .navbar-logo {
+                display: flex;
+                align-items: center;
+                gap: 0.6rem;
+                color: var(--accent-2);
+                font-size: 1.5rem;
+                font-weight: bold;
+            }
+
+            .navbar-links {
+                display: flex;
+                gap: 1.5rem;
+                align-items: center;
+            }
+
+            .navbar-links a {
+                color: var(--texte);
+                text-decoration: none;
+                transition: color 0.2s;
+            }
+
+            .navbar-links a:hover {
+                color: var(--accent-2);
+            }
+
+            #auth-container {
+                display: flex;
+                gap: 0.8rem;
+                align-items: center;
+                font-size: 0.9rem;
+            }
+
+            .videos-page {
+                width: min(760px, 100%);
+                margin: 0 auto;
+                padding: 6rem 1rem 2rem;
+            }
+
+            .videos-header {
+                margin-bottom: 1rem;
+                text-align: center;
+            }
+
+            .videos-header h1 {
+                margin: 0;
+            }
+
+            .videos-feed {
+                display: grid;
+                gap: 1rem;
+                scroll-snap-type: y mandatory;
+            }
+
+            .video-card {
+                position: relative;
+                overflow: hidden;
+                min-height: min(78vh, 720px);
+                border: 1px solid rgba(255, 255, 255, 0.2);
+                border-radius: 20px;
+                background: #120d12;
+                box-shadow: 0 18px 40px rgba(59, 29, 23, 0.22);
+                scroll-snap-align: start;
+            }
+
+            .video-card video {
+                display: block;
+                width: 100%;
+                height: min(78vh, 720px);
+                background: #08070a;
+                object-fit: contain;
+            }
+
+            .video-card::after {
+                position: absolute;
+                right: 0;
+                bottom: 0;
+                left: 0;
+                height: 48%;
+                background: linear-gradient(transparent, rgba(8, 7, 10, 0.9));
+                content: "";
+                pointer-events: none;
+            }
+
+            .video-card-content {
+                position: absolute;
+                right: 5.5rem;
+                bottom: 1.2rem;
+                left: 1.2rem;
+                z-index: 1;
+                color: #fff;
+            }
+
+            .video-card h2 {
+                margin: 0 0 0.35rem;
+                font-size: 1.35rem;
+            }
+
+            .video-card p {
+                margin: 0;
+                line-height: 1.45;
+            }
+
+            .video-date {
+                display: block;
+                margin-top: 0.65rem;
+                color: #ffd65d;
+                font-size: 0.8rem;
+            }
+
+            .video-actions {
+                position: absolute;
+                right: 0.8rem;
+                bottom: 1.15rem;
+                z-index: 2;
+                display: grid;
+                gap: 0.75rem;
+            }
+
+            .video-action {
+                width: 3.1rem;
+                min-height: 3.1rem;
+                padding: 0.35rem;
+                border: 1px solid rgba(255, 255, 255, 0.35);
+                border-radius: 999px;
+                background: rgba(0, 0, 0, 0.48);
+                color: #fff;
+                cursor: pointer;
+                font-size: 1.25rem;
+            }
+
+            .video-action.active {
+                background: var(--accent-2);
+            }
+
+            .video-action small {
+                display: block;
+                margin-top: 0.1rem;
+                font-size: 0.65rem;
+            }
+
+            .comments-panel {
+                display: none;
+                position: absolute;
+                right: 0;
+                bottom: 0;
+                left: 0;
+                z-index: 3;
+                max-height: 62%;
+                padding: 1rem;
+                border-top: 1px solid var(--bordure);
+                background: rgba(255, 248, 242, 0.98);
+                color: var(--texte);
+            }
+
+            .comments-panel.open {
+                display: block;
+            }
+
+            .comments-list {
+                max-height: 170px;
+                overflow-y: auto;
+                margin: 0.6rem 0;
+            }
+
+            .comment-item {
+                padding: 0.45rem 0;
+                border-bottom: 1px solid var(--bordure);
+                font-size: 0.9rem;
+            }
+
+            .comment-form {
+                display: flex;
+                gap: 0.5rem;
+            }
+
+            .comment-form input {
+                min-width: 0;
+                flex: 1;
+                padding: 0.65rem;
+                border: 1px solid var(--bordure);
+                border-radius: 8px;
+            }
+
+            .empty-videos {
+                padding: 3rem 1rem;
+                border: 1px dashed var(--bordure);
+                color: var(--texte-secondaire);
+                text-align: center;
+            }
+
+            .order-modal {
+                display: none;
+                position: fixed;
+                inset: 0;
+                z-index: 10;
+                align-items: center;
+                justify-content: center;
+                padding: 1rem;
+                background: rgba(0, 0, 0, 0.72);
+            }
+
+            .order-modal.open {
+                display: flex;
+            }
+
+            .order-dialog {
+                width: min(500px, 100%);
+                padding: 1.5rem;
+                border-radius: 16px;
+                background: var(--bg-2);
+            }
+
+            .order-dialog h2 {
+                margin-top: 0;
+            }
+
+            .order-dialog form {
+                display: grid;
+                gap: 0.8rem;
+            }
+
+            .order-dialog input,
+            .order-dialog textarea {
+                width: 100%;
+                padding: 0.7rem;
+                border: 1px solid var(--bordure);
+                border-radius: 8px;
+            }
+
+            .order-actions {
+                display: flex;
+                gap: 0.75rem;
+            }
+
+            @media (max-width: 700px) {
+                .navbar {
+                    flex-direction: column;
+                    gap: 1rem;
+                    padding: 1rem;
+                }
+
+                .navbar-links {
+                    flex-wrap: wrap;
+                    justify-content: center;
+                    gap: 0.8rem 1rem;
+                }
+
+                .videos-page { padding: 5rem 0.5rem 1rem; }
+                .videos-header { padding: 0 0.5rem; }
+                .video-card, .video-card video { min-height: calc(100vh - 6rem); height: calc(100vh - 6rem); }
+                .video-card-content { right: 4.8rem; }
+                .comment-form { flex-wrap: wrap; }
+                .comment-form button { width: 100%; }
+            }
+        </style>
+    </head>
+    <body>
+        <nav class="navbar">
+            <div class="navbar-logo">
+                <img src="logo.svg" alt="B&G Shop logo" class="site-logo" />
+                <span>B&G Shop</span>
+            </div>
+            <div class="navbar-links">
+                <a href="index.html">Accueil</a>
+                <a href="categories.html">Catégories</a>
+                <a href="videos.html">Vidéos</a>
+                <a href="messages.html">Messages</a>
+                <div id="auth-container"></div>
+            </div>
+        </nav>
+
+        <main class="videos-page">
+            <header class="videos-header">
+                <p class="eyebrow">B&G Shop</p>
+                <h1>Nos vidéos</h1>
+                <p>Découvrez les dernières vidéos publiées par B&G Shop.</p>
+            </header>
+            <section id="videos-feed" class="videos-feed" aria-live="polite"></section>
+        </main>
+
+        <div id="order-modal" class="order-modal" role="dialog" aria-modal="true" aria-labelledby="order-title">
+            <div class="order-dialog">
+                <h2 id="order-title">Passer la commande</h2>
+                <p id="order-video-title"></p>
+                <form id="order-form">
+                    <label>Nom complet <input id="order-name" required /></label>
+                    <label>Téléphone <input id="order-phone" type="tel" required /></label>
+                    <label>Adresse de livraison <textarea id="order-address" required></textarea></label>
+                    <div class="order-actions">
+                        <button class="btn btn-primaire" type="submit">Envoyer la commande</button>
+                        <button class="btn btn-secondaire" type="button" onclick="closeOrderModal()">Annuler</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <script src="js/app.js"></script>
+        <script>
+            let selectedVideo = null;
+
+            function requireUser() {
+                const user = app.checkAuth();
+                if (!user) {
+                    window.location.href = "login.html";
+                    return null;
+                }
+                return user;
+            }
+
+            function toggleLike(videoId) {
+                const user = requireUser();
+                if (!user) return;
+                app.toggleVideoLike(videoId, user);
+                renderVideos();
+            }
+
+            function toggleFavorite(videoId) {
+                const user = requireUser();
+                if (!user) return;
+                app.toggleVideoFavorite(videoId, user.email);
+                renderVideos();
+            }
+
+            function toggleComments(videoId) {
+                const panel = document.getElementById(`comments-${videoId}`);
+                panel.classList.toggle("open");
+                if (panel.classList.contains("open")) renderComments(videoId);
+            }
+
+            function renderComments(videoId) {
+                const video = app.getVideoById(videoId);
+                const list = document.querySelector(`#comments-${videoId} .comments-list`);
+                list.innerHTML = video.comments.length
+                    ? video.comments.map((comment) => `<div class="comment-item"><strong>${comment.name}</strong> ${comment.text}</div>`).join("")
+                    : "<p>Aucun commentaire pour le moment.</p>";
+            }
+
+            function submitComment(event, videoId) {
+                event.preventDefault();
+                const user = requireUser();
+                if (!user) return;
+                const input = event.target.querySelector("input");
+                const text = input.value.trim();
+                if (!text) return;
+                app.addVideoComment(videoId, { text, name: user.name, userEmail: user.email });
+                input.value = "";
+                renderComments(videoId);
+            }
+
+            function openOrderModal(videoId) {
+                const user = requireUser();
+                if (!user) return;
+                selectedVideo = app.getVideoById(videoId);
+                document.getElementById("order-video-title").textContent = selectedVideo.title;
+                document.getElementById("order-name").value = user.name || "";
+                document.getElementById("order-modal").classList.add("open");
+            }
+
+            function closeOrderModal() {
+                document.getElementById("order-modal").classList.remove("open");
+            }
+
+            function submitOrder(event) {
+                event.preventDefault();
+                const user = requireUser();
+                if (!user || !selectedVideo) return;
+                app.addOrder({
+                    customerName: document.getElementById("order-name").value.trim(),
+                    customerPhone: document.getElementById("order-phone").value.trim(),
+                    customerAddress: document.getElementById("order-address").value.trim(),
+                    videoId: selectedVideo.id,
+                    productTitle: selectedVideo.title,
+                    productPrice: selectedVideo.price || null,
+                    userId: user.id,
+                    userEmail: user.email,
+                });
+                alert("Commande envoyée avec succès !");
+                document.getElementById("order-form").reset();
+                closeOrderModal();
+            }
+
+            function renderVideos() {
+                const videos = app.getVideos().slice().sort((a, b) => new Date(b.postedDate) - new Date(a.postedDate));
+                const feed = document.getElementById("videos-feed");
+                const user = app.checkAuth();
+                const favorites = user ? app.getFavoriteVideoIds(user.email) : [];
+
+                if (videos.length === 0) {
+                    feed.innerHTML = '<p class="empty-videos">Aucune vidéo publiée pour le moment.</p>';
+                    return;
+                }
+
+                feed.innerHTML = videos.map((video) => {
+                    const likes = video.likes || [];
+                    const comments = video.comments || [];
+                    const liked = user && likes.some((like) => like.userEmail === user.email);
+                    const favorited = favorites.includes(video.id);
+                    return `
+                        <article class="video-card">
+                            <video controls muted playsinline preload="metadata" src="${video.videoUrl}" aria-label="${video.title}"></video>
+                            <div class="video-actions">
+                                <button class="video-action ${liked ? "active" : ""}" onclick="toggleLike(${video.id})" title="J'aime">♥<small>${likes.length}</small></button>
+                                <button class="video-action" onclick="toggleComments(${video.id})" title="Commentaires">💬<small>${comments.length}</small></button>
+                                <button class="video-action ${favorited ? "active" : ""}" onclick="toggleFavorite(${video.id})" title="Ajouter aux favoris">★</button>
+                                <button class="video-action" onclick="openOrderModal(${video.id})" title="Passer la commande">🛒</button>
+                            </div>
+                            <div class="video-card-content">
+                                <h2>${video.title}</h2>
+                                <p>${video.description}</p>
+                                <span class="video-date">Publiée le ${new Date(video.postedDate).toLocaleDateString("fr-FR")}</span>
+                            </div>
+                            <div id="comments-${video.id}" class="comments-panel">
+                                <strong>Commentaires</strong>
+                                <div class="comments-list"></div>
+                                <form class="comment-form" onsubmit="submitComment(event, ${video.id})">
+                                    <input placeholder="Ajouter un commentaire..." required />
+                                    <button class="btn btn-primaire" type="submit">Publier</button>
+                                </form>
+                            </div>
+                        </article>
+                    `;
+                }).join("");
+            }
+
+            document.addEventListener("DOMContentLoaded", () => {
+                updateAuthUI();
+                document.getElementById("order-form").addEventListener("submit", submitOrder);
+                renderVideos();
+                const videoObserver = new IntersectionObserver((entries) => {
+                    entries.forEach((entry) => {
+                        if (entry.isIntersecting && entry.intersectionRatio >= 0.7) {
+                            document.querySelectorAll(".video-card video").forEach((video) => {
+                                if (video !== entry.target) video.pause();
+                            });
+                            entry.target.play().catch(() => {});
+                        }
+                    });
+                }, { threshold: 0.7 });
+                document.querySelectorAll(".video-card video").forEach((video) => videoObserver.observe(video));
+            });
+        </script>
+    </body>
+</html>

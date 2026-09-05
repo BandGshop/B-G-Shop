@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="fr">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>B&G Shop | Catégories</title>
+        <link rel="stylesheet" href="styles.css" />
+        <style>
+            .navbar {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                padding: 1rem 2rem;
+                background: rgba(0, 0, 0, 0.3);
+                border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            }
+
+            .navbar-logo {
+                font-size: 1.5rem;
+                font-weight: bold;
+                color: var(--accent-2);
+            }
+
+            .navbar-links {
+                display: flex;
+                gap: 1.5rem;
+                align-items: center;
+            }
+
+            .navbar-links a {
+                color: var(--texte);
+                text-decoration: none;
+                transition: color 0.2s;
+            }
+
+            .navbar-links a:hover {
+                color: var(--accent-2);
+            }
+
+            #auth-container {
+                display: flex;
+                gap: 0.8rem;
+                align-items: center;
+                font-size: 0.9rem;
+            }
+
+            .categories-header {
+                padding: 3rem 2rem;
+                text-align: center;
+            }
+
+            .categories-container {
+                width: min(1200px, 100%);
+                margin: 0 auto 4rem;
+                padding: 0 2rem;
+            }
+
+            .categories-grid {
+                display: grid;
+                grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+                gap: 1rem;
+                margin-bottom: 2rem;
+            }
+
+            .category-group {
+                display: grid;
+                gap: 0.55rem;
+            }
+
+            .category-group .category-btn {
+                width: 100%;
+            }
+
+            .subcategory-btn {
+                padding: 0.65rem 0.8rem;
+                border: 1px solid var(--bordure);
+                border-radius: 8px;
+                background: rgba(255, 255, 255, 0.04);
+                color: var(--texte-secondaire);
+                cursor: pointer;
+                text-align: left;
+            }
+
+            .subcategory-btn:hover,
+            .subcategory-btn.active {
+                color: var(--accent-2);
+                border-color: var(--accent-2);
+            }
+
+            .category-btn {
+                padding: 1rem;
+                border-radius: 12px;
+                border: 2px solid var(--bordure);
+                background: rgba(255, 255, 255, 0.07);
+                color: var(--texte);
+                cursor: pointer;
+                transition: all 0.3s;
+                font-weight: 500;
+                font-size: 1rem;
+            }
+
+            .category-btn:hover {
+                border-color: var(--accent-2);
+                background: rgba(255, 63, 149, 0.12);
+                color: var(--accent-2);
+            }
+
+            .category-btn.active {
+                border-color: var(--accent-2);
+                background: var(--accent-2);
+                color: var(--bg);
+            }
+
+            .products-grid {
+                display: grid;
+                grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+                gap: 1.5rem;
+            }
+
+            .product-card {
+                border-radius: 18px;
+                background: rgba(255, 255, 255, 0.07);
+                border: 1px solid var(--bordure);
+                overflow: hidden;
+                transition: transform 0.3s, box-shadow 0.3s;
+                cursor: pointer;
+            }
+
+            .product-card:hover {
+                transform: translateY(-8px);
+                box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+            }
+
+            .product-image {
+                width: 100%;
+                height: 200px;
+                object-fit: cover;
+                background: rgba(255, 255, 255, 0.05);
+            }
+
+            .product-info {
+                padding: 1.2rem;
+            }
+
+            .product-category {
+                font-size: 0.8rem;
+                color: var(--accent-2);
+                text-transform: uppercase;
+                font-weight: 600;
+            }
+
+            .product-title {
+                font-size: 1.1rem;
+                font-weight: 600;
+                margin: 0.5rem 0;
+            }
+
+            .product-description {
+                font-size: 0.9rem;
+                color: var(--texte-secondaire);
+                margin: 0.5rem 0 1rem;
+            }
+
+            .product-price {
+                font-size: 1.3rem;
+                color: var(--accent);
+                font-weight: 700;
+            }
+
+            .empty-state {
+                text-align: center;
+                padding: 3rem 2rem;
+                color: var(--texte-secondaire);
+            }
+        </style>
+    </head>
+    <body>
+        <!-- Navigation -->
+        <nav class="navbar">
+            <div class="navbar-logo">
+                <img src="images/bglogo.jpeg" alt="B&G Shop logo" class="site-logo" />
+                <span>B&G Shop</span>
+            </div>
+            <div class="navbar-links">
+                <a href="index.html">Accueil</a>
+                <a href="categories.html">Catégories</a>
+                <a href="videos.html">Vidéos</a>
+                <a href="messages.html">Messages</a>
+                <div id="auth-container"></div>
+            </div>
+        </nav>
+
+        <!-- Header -->
+        <div class="categories-header">
+            <h1>Nos catégories</h1>
+            <p style="color: var(--texte-secondaire); font-size: 1.1rem">Parcourez nos produits par catégorie</p>
+        </div>
+
+        <!-- Main Content -->
+        <div class="categories-container">
+            <!-- Category Filters -->
+            <div class="categories-grid" id="categories-list">
+                <!-- Categories will be loaded here -->
+            </div>
+
+            <!-- Products Grid -->
+            <div class="products-grid" id="products-grid">
+                <!-- Products will be loaded here -->
+            </div>
+
+            <!-- Empty State -->
+            <div class="empty-state" id="empty-state" style="display: none">
+                <p>Aucun produit trouvé dans cette catégorie pour le moment.</p>
+            </div>
+        </div>
+
+        <script src="js/app.js"></script>
+        <script>
+            let currentCategory = null;
+
+            function loadCategories() {
+                const categories = app.getCategories();
+                const container = document.getElementById("categories-list");
+
+                container.innerHTML = `
+          <button class="category-btn active" onclick="filterByCategory(null, this)">
+            Tous les produits
+          </button>
+                    ${categories
+                    .map(
+                        (cat) => `
+                        <div class="category-group">
+                            <button class="category-btn" onclick="filterByCategory('${cat.name}', this)">${
+                            cat.name
+                        }</button>
+                            ${
+                                cat.subcategories
+                                    ? cat.subcategories
+                                      .map(
+                                          (subcat) => `
+                                <button class="subcategory-btn" onclick="filterByCategory('${subcat}', this)">${subcat}</button>
+                            `
+                                      )
+                                      .join("")
+                                    : ""
+                            }
+                        </div>
+                    `
+                    )
+                    .join("")}
+        `;
+            }
+
+            function filterByCategory(category, button) {
+                currentCategory = category;
+
+                // Update active button
+                document.querySelectorAll(".category-btn").forEach((btn) => btn.classList.remove("active"));
+                button.classList.add("active");
+
+                // Load products
+                loadProducts();
+            }
+
+            function loadProducts() {
+                let products;
+
+                if (currentCategory) {
+                    products = app.getProductsByCategory(currentCategory);
+                } else {
+                    products = app.getProducts();
+                }
+
+                const container = document.getElementById("products-grid");
+                const emptyState = document.getElementById("empty-state");
+
+                if (products.length === 0) {
+                    container.style.display = "none";
+                    emptyState.style.display = "block";
+                    return;
+                }
+
+                container.style.display = "grid";
+                emptyState.style.display = "none";
+
+                container.innerHTML = products
+                .map(
+                    (product) => `
+          <div class="product-card" onclick="goToProduct(${product.id})">
+            <img src="${product.image}" alt="${product.title}" class="product-image" />
+            <div class="product-info">
+              <div class="product-category">${product.category}</div>
+              <div class="product-title">${product.title}</div>
+              <div class="product-description">${product.description.substring(0, 60)}...</div>
+              <div class="product-price">${product.price} FCFA</div>
+              ${productActionsMarkup(product.id)}
+            </div>
+          </div>
+        `
+                )
+                .join("");
+            }
+
+            function goToProduct(productId) {
+                window.location.href = `product-detail.html?id=${productId}`;
+            }
+
+            // Initialize
+            document.addEventListener("DOMContentLoaded", () => {
+                loadCategories();
+                loadProducts();
+            });
+        </script>
+    </body>
+</html>

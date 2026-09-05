@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>B&G Shop | Paramètres</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <nav class="navbar">
+    <div class="navbar-logo"><img src="images/bglogo.jpeg" alt="B&G Shop logo" class="site-logo"><span>B&G Shop</span></div>
+    <div class="navbar-links">
+      <a href="index.html" data-i18n="home">Accueil</a><a href="categories.html" data-i18n="categories">Catégories</a><a href="videos.html" data-i18n="videos">Vidéos</a><a href="messages.html" data-i18n="messages">Messages</a>
+      <div id="auth-container"></div>
+    </div>
+  </nav>
+
+  <main class="settings-page">
+    <header class="settings-header"><p class="eyebrow" data-i18n="account">Espace personnel</p><h1 data-i18n="title">Paramètres</h1><p data-i18n="subtitle">Gérez votre expérience B&G Shop et retrouvez vos contenus.</p></header>
+    <div class="settings-layout">
+      <nav class="settings-nav" aria-label="Paramètres">
+        <button class="active" data-section="content" data-i18n="myContent">Mes contenus</button>
+        <button data-section="orders" data-i18n="orders">Mes commandes</button>
+        <button data-section="appearance" data-i18n="appearance">Apparence et langue</button>
+        <button data-section="admin" id="admin-settings-tab" data-i18n="adminTools">Outils admin</button>
+      </nav>
+      <div class="settings-panel">
+        <section class="settings-section active" id="content">
+          <div class="settings-admin-card"><h2 data-i18n="notifications">Notifications</h2><div id="notifications-list"></div><a class="btn btn-primaire" href="messages.html" data-i18n="contactAdmins">Contacter les admins</a></div>
+          <h2 data-i18n="likedProducts">Articles aimés</h2><div id="liked-products" class="settings-grid"></div>
+          <h2 data-i18n="favoriteProducts">Articles favoris</h2><div id="favorite-products" class="settings-grid"></div>
+          <h2 data-i18n="likedVideos">Vidéos aimées</h2><div id="liked-videos" class="settings-grid"></div>
+          <h2 data-i18n="favoriteVideos">Vidéos favorites</h2><div id="favorite-videos" class="settings-grid"></div>
+        </section>
+        <section class="settings-section" id="orders"><h2 data-i18n="orderTracking">Suivi de mes commandes</h2><div id="orders-list"></div></section>
+        <section class="settings-section" id="appearance">
+          <h2 data-i18n="appearance">Apparence et langue</h2>
+          <form class="settings-form" id="appearance-form">
+            <label><span data-i18n="language">Langue du site</span><select id="language"><option value="fr">Français</option><option value="en">English</option><option value="es">Español</option><option value="ru">Русский</option><option value="pt">Português</option><option value="de">Deutsch</option><option value="zh">中文</option></select></label>
+            <label><span data-i18n="siteBackground">Arrière-plan du site</span><select id="site-bg-type"><option value="default">Par défaut</option><option value="color">Une couleur</option><option value="image">Une image importée</option><option value="system">Appareil (détection automatique)</option></select></label>
+            <label id="site-color-label"><span data-i18n="chooseColor">Choisir une couleur</span><input type="color" id="site-bg-color" value="#fff2ea"></label>
+            <label id="site-image-label"><span data-i18n="chooseImage">Importer une image</span><input type="file" id="site-bg-image" accept="image/*"></label>
+            <label><span data-i18n="messageBackground">Arrière-plan de la messagerie</span><select id="message-bg-type"><option value="default">Par défaut</option><option value="color">Une couleur</option><option value="image">Une image importée</option></select></label>
+            <label id="message-color-label"><span data-i18n="chooseColor">Choisir une couleur</span><input type="color" id="message-bg-color" value="#fff2ea"></label>
+            <label id="message-image-label"><span data-i18n="chooseImage">Importer une image</span><input type="file" id="message-bg-image" accept="image/*"></label>
+            <button class="btn btn-primaire" type="submit" data-i18n="save">Enregistrer</button><div id="appearance-status"></div>
+          </form>
+        </section>
+        <section class="settings-section" id="admin">
+          <h2 data-i18n="adminTools">Outils admin</h2>
+          <div class="settings-admin-card" id="ad-management"><h3>Gestion de la barre de publicité</h3><p>Sélectionnez plusieurs vidéos. Elles seront lues automatiquement l'une après l'autre, sans son.</p><form class="settings-form" id="ad-upload-form"><label>Importer des vidéos publicitaires<input id="ad-video-upload" type="file" accept="video/*" multiple required></label><button class="btn btn-primaire" type="submit">Importer les vidéos</button></form><div id="ad-upload-status"></div><div id="ad-video-list" class="settings-grid"></div><button class="btn btn-primaire" id="save-ad-videos" type="button">Enregistrer la sélection publicitaire</button><div id="ad-status"></div></div>
+          <div class="settings-admin-card"><h3 data-i18n="changePassword">Changer le mot de passe admin</h3><form class="settings-form" id="password-form"><input id="current-password" type="password" placeholder="Mot de passe actuel" required><input id="new-password" type="password" placeholder="Nouveau mot de passe" minlength="6" required><button class="btn btn-primaire" data-i18n="change">Modifier</button></form><div id="password-status"></div></div>
+          <div class="settings-admin-card"><h3 data-i18n="notify">Notifier tous les utilisateurs</h3><form class="settings-form" id="notification-form"><input id="notification-title" placeholder="Titre" required><textarea id="notification-text" placeholder="Message, promotion ou mise à jour" required></textarea><button class="btn btn-primaire" data-i18n="send">Envoyer la notification</button></form><div id="notification-status"></div></div>
+          <div class="settings-admin-card"><h3 data-i18n="help">Aide</h3><p data-i18n="helpText">Demandes envoyées par les utilisateurs.</p><div id="help-list"></div></div>
+        </section>
+      </div>
+    </div>
+  </main>
+  <script src="js/app.js"></script>
+  <script>
+    const translations = {
+      fr: { home:'Accueil', categories:'Catégories', videos:'Vidéos', messages:'Messages', account:'Espace personnel', title:'Paramètres', subtitle:'Gérez votre expérience B&G Shop et retrouvez vos contenus.', myContent:'Mes contenus', orders:'Mes commandes', appearance:'Apparence et langue', adminTools:'Outils admin', likedProducts:'Articles aimés', favoriteProducts:'Articles favoris', likedVideos:'Vidéos aimées', favoriteVideos:'Vidéos favorites', orderTracking:'Suivi de mes commandes', language:'Langue du site', siteBackground:'Arrière-plan du site', messageBackground:'Arrière-plan de la messagerie', chooseColor:'Choisir une couleur', chooseImage:'Importer une image', save:'Enregistrer', changePassword:'Changer le mot de passe admin', change:'Modifier', notify:'Notifier tous les utilisateurs', send:'Envoyer la notification', help:'Aide', helpText:'Demandes envoyées par les utilisateurs.' },
+      en: { home:'Home', categories:'Categories', videos:'Videos', messages:'Messages', account:'Personal space', title:'Settings', subtitle:'Manage your B&G Shop experience and content.', myContent:'My content', orders:'My orders', appearance:'Appearance and language', adminTools:'Admin tools', likedProducts:'Liked products', favoriteProducts:'Favorite products', likedVideos:'Liked videos', favoriteVideos:'Favorite videos', orderTracking:'Order tracking', language:'Site language', siteBackground:'Site background', messageBackground:'Messaging background', chooseColor:'Choose a color', chooseImage:'Import an image', save:'Save', changePassword:'Change admin password', change:'Change', notify:'Notify all users', send:'Send notification', help:'Help', helpText:'Requests sent by users.' },
+      es: { home:'Inicio', categories:'Categorías', videos:'Vídeos', messages:'Mensajes', account:'Espacio personal', title:'Configuración', subtitle:'Gestiona tu experiencia B&G Shop.', myContent:'Mi contenido', orders:'Mis pedidos', appearance:'Apariencia e idioma', adminTools:'Herramientas admin', notifications:'Notificaciones', contactAdmins:'Contactar con los administradores', likedProducts:'Artículos que me gustan', favoriteProducts:'Favoritos', likedVideos:'Vídeos que me gustan', favoriteVideos:'Vídeos favoritos', orderTracking:'Seguimiento de pedidos', language:'Idioma del sitio', siteBackground:'Fondo del sitio', messageBackground:'Fondo de mensajes', chooseColor:'Elegir color', chooseImage:'Importar imagen', save:'Guardar', changePassword:'Cambiar contraseña admin', change:'Cambiar', notify:'Notificar a todos', send:'Enviar', help:'Ayuda', helpText:'Solicitudes de los usuarios.' },
+      ru: { home:'Главная', categories:'Категории', videos:'Видео', messages:'Сообщения', account:'Личный кабинет', title:'Настройки', subtitle:'Управляйте настройками B&G Shop.', myContent:'Мой контент', orders:'Мои заказы', appearance:'Внешний вид и язык', adminTools:'Инструменты администратора', notifications:'Уведомления', contactAdmins:'Связаться с администраторами', likedProducts:'Понравившиеся товары', favoriteProducts:'Избранные товары', likedVideos:'Понравившиеся видео', favoriteVideos:'Избранные видео', orderTracking:'Отслеживание заказов', language:'Язык сайта', siteBackground:'Фон сайта', messageBackground:'Фон сообщений', chooseColor:'Выбрать цвет', chooseImage:'Импортировать изображение', save:'Сохранить', changePassword:'Изменить пароль администратора', change:'Изменить', notify:'Уведомить всех пользователей', send:'Отправить', help:'Помощь', helpText:'Запросы пользователей.' },
+      pt: { home:'Início', categories:'Categorias', videos:'Vídeos', messages:'Mensagens', account:'Espaço pessoal', title:'Configurações', subtitle:'Gerencie sua experiência na B&G Shop.', myContent:'Meu conteúdo', orders:'Meus pedidos', appearance:'Aparência e idioma', adminTools:'Ferramentas admin', notifications:'Notificações', contactAdmins:'Contactar administradores', likedProducts:'Artigos curtidos', favoriteProducts:'Artigos favoritos', likedVideos:'Vídeos curtidos', favoriteVideos:'Vídeos favoritos', orderTracking:'Acompanhar pedidos', language:'Idioma do site', siteBackground:'Fundo do site', messageBackground:'Fundo das mensagens', chooseColor:'Escolher cor', chooseImage:'Importar imagem', save:'Guardar', changePassword:'Alterar senha admin', change:'Alterar', notify:'Notificar todos', send:'Enviar', help:'Ajuda', helpText:'Pedidos dos usuários.' },
+      de: { home:'Startseite', categories:'Kategorien', videos:'Videos', messages:'Nachrichten', account:'Persönlicher Bereich', title:'Einstellungen', subtitle:'Verwalten Sie Ihre B&G Shop-Erfahrung.', myContent:'Meine Inhalte', orders:'Meine Bestellungen', appearance:'Darstellung und Sprache', adminTools:'Admin-Werkzeuge', notifications:'Benachrichtigungen', contactAdmins:'Admins kontaktieren', likedProducts:'Gefällt mir: Artikel', favoriteProducts:'Favoriten', likedVideos:'Gefällt mir: Videos', favoriteVideos:'Favorisierte Videos', orderTracking:'Bestellverfolgung', language:'Website-Sprache', siteBackground:'Website-Hintergrund', messageBackground:'Nachrichten-Hintergrund', chooseColor:'Farbe wählen', chooseImage:'Bild importieren', save:'Speichern', changePassword:'Admin-Passwort ändern', change:'Ändern', notify:'Alle Benutzer benachrichtigen', send:'Senden', help:'Hilfe', helpText:'Anfragen von Benutzern.' },
+      zh: { home:'首页', categories:'分类', videos:'视频', messages:'消息', account:'个人空间', title:'设置', subtitle:'管理您的 B&G Shop 体验。', myContent:'我的内容', orders:'我的订单', appearance:'外观和语言', adminTools:'管理员工具', notifications:'通知', contactAdmins:'联系管理员', likedProducts:'喜欢的商品', favoriteProducts:'收藏的商品', likedVideos:'喜欢的视频', favoriteVideos:'收藏的视频', orderTracking:'订单跟踪', language:'网站语言', siteBackground:'网站背景', messageBackground:'消息背景', chooseColor:'选择颜色', chooseImage:'导入图片', save:'保存', changePassword:'更改管理员密码', change:'更改', notify:'通知所有用户', send:'发送', help:'帮助', helpText:'用户发送的请求。' }
+    };
+    let user, settings;
+    const $ = (id) => document.getElementById(id);
+    function requireUser() { user = app.checkAuth(); if (!user) { window.location.href = 'login.html'; return false; } return true; }
+    function applyLanguage(language) { document.documentElement.lang = language; const text = translations[language] || translations.fr; document.querySelectorAll('[data-i18n]').forEach((element) => { if (text[element.dataset.i18n]) element.textContent = text[element.dataset.i18n]; }); }
+    function card(item, type) { return `<article class="settings-item">${item.image ? `<img src="${item.image}" alt="${item.title || item.name || 'Contenu'}">` : ''}<h3>${item.title || item.name || 'Vidéo'}</h3><p>${type === 'order' ? `${item.status || 'pending'} · ${item.productPrice || 0} FCFA` : (item.description || '')}</p></article>`; }
+    function renderCollection(id, items, type) { $(id).innerHTML = items.length ? items.map((item) => card(item, type)).join('') : '<p class="settings-empty">Aucun contenu pour le moment.</p>'; }
+    function renderContent() {
+      const products = app.getProducts(); const videos = app.getVideos(); const likedProductIds = app.getUserProductIds(user.email, 'liked'); const favoriteProductIds = app.getUserProductIds(user.email, 'favorites'); const likedVideos = videos.filter((video) => (video.likes || []).some((like) => like.userEmail === user.email)); const favoriteVideos = videos.filter((video) => app.getFavoriteVideoIds(user.email).includes(video.id));
+      renderCollection('liked-products', products.filter((product) => likedProductIds.includes(product.id))); renderCollection('favorite-products', products.filter((product) => favoriteProductIds.includes(product.id))); renderCollection('liked-videos', likedVideos); renderCollection('favorite-videos', favoriteVideos);
+      $('notifications-list').innerHTML = app.getNotifications().map((notification) => `<article class="settings-item"><h3>${notification.title}</h3><p>${notification.text}</p></article>`).join('') || '<p class="settings-empty">Aucune notification.</p>';
+      $('orders-list').innerHTML = app.getOrders().filter((order) => order.userEmail === user.email).map((order) => card(order, 'order')).join('') || '<p class="settings-empty">Aucune commande.</p>';
+    }
+    function toggleOptions(prefix) { const type = $(prefix + '-bg-type').value; $(prefix + '-color-label').style.display = type === 'color' ? 'grid' : 'none'; $(prefix + '-image-label').style.display = type === 'image' ? 'grid' : 'none'; }
+    function readFile(input) { return input.files[0] ? app.getVideoDataURL(input.files[0]) : Promise.resolve(''); }
+    function renderHelp() { const requests = app.getMessages().filter((message) => message.receiver === 'admin'); $('help-list').innerHTML = requests.length ? requests.map((message) => `<article class="settings-item"><strong>${message.userEmail}</strong><p>${message.text}</p><small>${new Date(message.createdDate).toLocaleString()}</small></article>`).join('') : '<p class="settings-empty">Aucune demande.</p>'; }
+    function renderAdManagement() { const selected = app.getAdVideoIds(); const videos = app.getVideos(); $('ad-video-list').innerHTML = videos.length ? videos.map((video) => `<label class="settings-item settings-choice"><input type="checkbox" value="${video.id}" ${selected.includes(video.id) ? 'checked' : ''}><span>${video.title}</span></label>`).join('') : '<p class="settings-empty">Aucune vidéo publiée.</p>'; }
+    async function importAdVideos(event) {
+      event.preventDefault(); const files = [...$('ad-video-upload').files]; const status = $('ad-upload-status'); const adVideoIds = app.getAdVideoIds();
+      if (!files.length) return;
+      status.textContent = 'Importation en cours...';
+      try {
+        for (const file of files) {
+          if (!file.type.startsWith('video/')) continue;
+          const compressedFile = await app.compressVideoFile(file); const videoUrl = await app.getVideoDataURL(compressedFile);
+          const video = app.addVideo({ title: file.name.replace(/\.[^/.]+$/, ''), description: 'Vidéo publicitaire B&G Shop', videoUrl, originalName: file.name, duration: compressedFile.duration || null });
+          if (!adVideoIds.includes(video.id)) adVideoIds.push(video.id);
+        }
+        app.setAdVideoIds(adVideoIds); renderAdManagement(); $('ad-upload-form').reset(); status.textContent = 'Vidéos importées et ajoutées à la barre publicitaire.';
+      } catch (error) { status.textContent = error.message || 'Impossible d’importer les vidéos.'; }
+    }
+    document.addEventListener('DOMContentLoaded', async () => {
+      if (!requireUser()) return; settings = app.getUserSettings(user.email); app.applyUserSettings(settings); applyLanguage(settings.language); $('language').value = settings.language; $('site-bg-type').value = settings.siteBackground.type; $('message-bg-type').value = settings.messageBackground.type; $('admin-settings-tab').style.display = user.role === 'admin' ? 'block' : 'none'; renderContent(); toggleOptions('site'); toggleOptions('message'); if (user.role === 'admin') { renderHelp(); renderAdManagement(); }
+      document.querySelectorAll('.settings-nav button').forEach((button) => button.addEventListener('click', () => { document.querySelectorAll('.settings-nav button, .settings-section').forEach((element) => element.classList.remove('active')); button.classList.add('active'); $(button.dataset.section).classList.add('active'); }));
+      ['site','message'].forEach((prefix) => $(prefix + '-bg-type').addEventListener('change', () => toggleOptions(prefix)));
+      $('appearance-form').addEventListener('submit', async (event) => { event.preventDefault(); const siteImage = await readFile($('site-bg-image')); const messageImage = await readFile($('message-bg-image')); settings = { language: $('language').value, siteBackground: { type: $('site-bg-type').value, value: siteImage || ($('site-bg-type').value === 'image' ? settings.siteBackground.value : $('site-bg-color').value) }, messageBackground: { type: $('message-bg-type').value, value: messageImage || ($('message-bg-type').value === 'image' ? settings.messageBackground.value : $('message-bg-color').value) } }; app.saveUserSettings(user.email, settings); applyLanguage(settings.language); $('appearance-status').textContent = 'Préférences enregistrées.'; });
+      $('password-form').addEventListener('submit', (event) => { event.preventDefault(); $('password-status').textContent = app.changeAdminPassword(user.email, $('current-password').value, $('new-password').value) ? 'Mot de passe modifié.' : 'Mot de passe actuel incorrect.'; });
+      $('notification-form').addEventListener('submit', (event) => { event.preventDefault(); app.addNotification({ title: $('notification-title').value, text: $('notification-text').value }); $('notification-status').textContent = 'Notification envoyée à tous les utilisateurs.'; event.target.reset(); });
+      $('ad-upload-form').addEventListener('submit', importAdVideos);
+      $('save-ad-videos').addEventListener('click', () => { const ids = [...$('ad-video-list').querySelectorAll('input:checked')].map((input) => Number(input.value)); app.setAdVideoIds(ids); $('ad-status').textContent = 'Barre de publicité mise à jour.'; });
+    });
+  </script>
+</body>
+</html>

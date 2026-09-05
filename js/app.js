@@ -117,7 +117,7 @@ const app = {
     return { success: false, message: 'Email ou mot de passe incorrect' };
   },
 
-  register(email, password, name) {
+  register(email, password, name, profileImage = '') {
     const users = JSON.parse(localStorage.getItem('bgshop_users'));
     if (users.find(u => u.email === email)) {
       return { success: false, message: 'Email déjà utilisé' };
@@ -127,6 +127,7 @@ const app = {
       email,
       password,
       name,
+      profileImage,
       role: 'user'
     };
     users.push(newUser);
@@ -161,6 +162,20 @@ const app = {
 
   getProduct(id) {
     return this.getProducts().find(p => p.id === id);
+  },
+
+  getCart() {
+    return JSON.parse(localStorage.getItem('bgshop_cart') || '[]');
+  },
+
+  addToCart(productId) {
+    const cart = this.getCart();
+    if (!cart.includes(productId)) cart.push(productId);
+    localStorage.setItem('bgshop_cart', JSON.stringify(cart));
+  },
+
+  removeFromCart(productId) {
+    localStorage.setItem('bgshop_cart', JSON.stringify(this.getCart().filter((id) => id !== productId)));
   },
 
   getUserSettings(userEmail) {
@@ -383,7 +398,7 @@ const app = {
     });
 
     recorder.start();
-    await video.play().catch(() => {});
+    await video.play().catch(() => { });
 
     await new Promise((resolve) => {
       let ended = false;
@@ -528,6 +543,7 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 function enhanceNavigation() {
+  if (document.body.classList.contains('market-page')) return;
   const navbar = document.querySelector('.navbar');
   if (!navbar || navbar.querySelector('.burger-button')) return;
   const menu = document.createElement('div');
@@ -543,6 +559,7 @@ function enhanceNavigation() {
 }
 
 function renderAdvertisingBar() {
+  if (document.body.classList.contains('market-page')) return;
   if (document.querySelector('.ad-bar')) return;
   const navbar = document.querySelector('.navbar');
   if (!navbar) return;
@@ -565,27 +582,26 @@ function renderAdvertisingBar() {
   video.addEventListener('ended', () => {
     current = (current + 1) % videos.length;
     video.src = videos[current].videoUrl;
-    video.play().catch(() => {});
+    video.play().catch(() => { });
   });
   bar.appendChild(video);
-  video.play().catch(() => {});
+  video.play().catch(() => { });
 }
 
 // Update auth UI
 function updateAuthUI() {
   const user = app.checkAuth();
   const authContainer = document.getElementById('auth-container');
-  
+
   if (authContainer) {
     if (user) {
-      authContainer.innerHTML = `
-        <span>Bienvenue, ${user.name}</span>
-        ${user.role === 'admin' ? '<a href="admin.html" class="btn btn-primaire">Admin</a>' : ''}
-      `;
+      authContainer.innerHTML = user.role === 'admin'
+        ? '<a href="admin.html" class="admin-space-button">Espace admin</a>'
+        : `<a class="profile-chip" href="settings.html"><span class="profile-avatar">${user.profileImage ? `<img src="${user.profileImage}" alt="Photo de ${user.name}">` : '♙'}</span><span>${user.name.split(' ')[0]}</span></a>`;
     } else {
       authContainer.innerHTML = `
-        <a href="login.html" class="btn btn-primaire">Connexion</a>
-        <a href="login.html" class="btn btn-secondaire">Inscription</a>
+        <span class="profile-avatar">♙</span>
+        <a href="login.html" class="login-link">Se connecter</a>
       `;
     }
   }

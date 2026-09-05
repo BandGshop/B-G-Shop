@@ -145,6 +145,10 @@
                     <div id="register-name-error" class="error-message"></div>
                 </div>
                 <div class="form-group">
+                    <label for="register-photo">Photo de profil (facultatif)</label>
+                    <input type="file" id="register-photo" accept="image/*" />
+                </div>
+                <div class="form-group">
                     <label for="register-email">Email</label>
                     <input type="email" id="register-email" placeholder="exemple@email.com" />
                     <div id="register-email-error" class="error-message"></div>
@@ -204,6 +208,7 @@
                 const email = document.getElementById("register-email").value;
                 const password = document.getElementById("register-password").value;
                 const confirm = document.getElementById("register-confirm").value;
+                const photo = document.getElementById("register-photo").files[0];
 
                 let hasError = false;
 
@@ -239,12 +244,16 @@
 
                 if (hasError) return;
 
-                const result = app.register(email, password, name);
-                if (result.success) {
-                    window.location.href = "index.html";
-                } else {
-                    document.getElementById("register-error").textContent = result.message;
-                }
+                const finishRegistration = (profileImage = "") => {
+                    const result = app.register(email, password, name, profileImage);
+                    if (result.success) window.location.href = "index.html";
+                    else document.getElementById("register-error").textContent = result.message;
+                };
+                if (photo) {
+                    const reader = new FileReader();
+                    reader.onload = () => finishRegistration(reader.result);
+                    reader.readAsDataURL(photo);
+                } else finishRegistration();
             }
 
             // Enter key to submit

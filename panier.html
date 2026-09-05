@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>B&G Shop | Panier</title>
+  <link rel="stylesheet" href="styles.css" />
+  <style>
+    .cart-page { width: min(900px, calc(100% - 2rem)); margin: 0 auto; padding: 5rem 0 4rem; }
+    .cart-page h1 { margin-bottom: 1.5rem; }
+    .cart-list { display: grid; gap: .75rem; }
+    .cart-item { display: flex; align-items: center; gap: 1rem; padding: .8rem; background: #fff; border: 1px solid var(--line); border-radius: 9px; }
+    .cart-item img { width: 80px; height: 70px; border-radius: 6px; object-fit: cover; }
+    .cart-item-info { flex: 1; }
+    .cart-item-info h2 { margin: 0 0 .2rem; font-size: 1rem; }
+    .cart-item-info p { margin: 0; color: var(--muted); }
+    .cart-remove { border: 0; background: transparent; color: #b34b36; cursor: pointer; font: inherit; }
+    .cart-total { display: flex; justify-content: space-between; margin-top: 1.3rem; padding-top: 1rem; border-top: 1px solid var(--line); font-size: 1.2rem; font-weight: 800; }
+  </style>
+</head>
+<body>
+  <nav class="navbar"><a class="navbar-logo" href="index.html"><img src="images/bglogo.jpeg" alt="B&G Shop logo" class="site-logo" /><span>B&G Shop</span></a><div id="auth-container"></div></nav>
+  <main class="page-content cart-page"><p class="eyebrow">Votre sélection</p><h1>Panier</h1><div class="cart-list" id="cart-list"></div><div class="cart-total"><span>Total</span><span id="cart-total">0 FCFA</span></div><button class="btn btn-primaire" type="button" onclick="confirmOrder()">Confirmer l'achat</button></main>
+  <script src="js/app.js"></script>
+  <script>
+    function renderCart() {
+      const products = app.getCart().map((id) => app.getProduct(id)).filter(Boolean);
+      document.getElementById('cart-list').innerHTML = products.length ? products.map((product) => `<article class="cart-item"><img src="${product.image}" alt="${product.title}"><div class="cart-item-info"><h2>${product.title}</h2><p>${product.price} FCFA</p></div><button class="cart-remove" onclick="removeItem(${product.id})">Retirer</button></article>`).join('') : '<p>Votre panier est vide.</p>';
+      document.getElementById('cart-total').textContent = `${products.reduce((total, product) => total + Number(product.price || 0), 0)} FCFA`;
+    }
+    function removeItem(productId) { app.removeFromCart(productId); renderCart(); }
+    function confirmOrder() { if (!app.checkAuth()) window.location.href = 'login.html'; else alert('Votre demande d’achat a été enregistrée.'); }
+    document.addEventListener('DOMContentLoaded', renderCart);
+  </script>
+</body>
+</html>

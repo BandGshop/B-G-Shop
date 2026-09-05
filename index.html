@@ -1,75 +1,413 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>B&G Shop | Trouvez ce qu'il vous faut</title>
-  <link rel="stylesheet" href="styles.css" />
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>B&G Shop | Trouvez ce qu'il vous faut</title>
+    <link rel="stylesheet" href="styles.css" />
+    <style>
+        .market-nav { justify-content: space-between; }
+        .market-brand { order: 4; margin-left: auto; }
+        .market-brand span { color: var(--ink); }
+        .market-links { order: 1; margin-left: 0; }
+        .market-links > a, .market-links .ad-bar { display: none; }
+        .market-links #auth-container { display: flex; }
+        .market-hero { position: relative; min-height: 430px; display: grid; place-items: center; overflow: hidden; background: #17282b; }
+        .market-hero-video, .market-hero-shade { position: absolute; inset: 0; width: 100%; height: 100%; }
+        .market-hero-video { object-fit: cover; opacity: .62; }
+        .market-hero-shade { background: linear-gradient(90deg, rgba(7, 24, 27, .82), rgba(7, 24, 27, .3) 58%, rgba(7, 24, 27, .72)); }
+        .market-hero-content { position: relative; z-index: 1; width: min(1180px, calc(100% - 2rem)); padding: 4.5rem 0 3rem; color: #fff; }
+        .market-hero h1 { max-width: 650px; margin: .5rem 0 .8rem; color: #fff; font-size: clamp(2.3rem, 5vw, 4.5rem); line-height: 1.03; }
+        .market-hero p { max-width: 570px; margin: 0 0 2rem; color: rgba(255,255,255,.82); font-size: 1.08rem; }
+        .search-row { display: grid; grid-template-columns: minmax(200px, .8fr) minmax(260px, 1.35fr); gap: .75rem; max-width: 850px; }
+        .market-search { display: flex; align-items: center; gap: .65rem; min-height: 58px; padding: 0 1rem; border-radius: 8px; background: #fff; color: #526066; box-shadow: 0 12px 26px rgba(0,0,0,.15); }
+        .market-search input { min-width: 0; width: 100%; border: 0; outline: 0; background: transparent; color: #243338; font: inherit; }
+        .category-strip { display: flex; gap: .6rem; overflow-x: auto; max-width: 850px; max-height: 0; padding: 0; opacity: 0; scrollbar-width: thin; transition: max-height .2s, opacity .2s, padding .2s; }
+        .market-hero-content:has(#product-search:focus) .category-strip { max-height: 58px; padding: .8rem 0 0; opacity: 1; }
+        .category-strip a { flex: 0 0 auto; padding: .45rem .8rem; border: 1px solid rgba(255,255,255,.3); border-radius: 99px; color: #fff; font-size: .88rem; }
+        .market-main { width: min(1180px, calc(100% - 2rem)); margin: 0 auto; padding: 2.8rem 0 7rem; }
+        .market-heading { display: flex; align-items: end; justify-content: space-between; gap: 1rem; margin-bottom: 1.2rem; }
+        .market-heading h2 { margin: 0; font-size: clamp(1.5rem, 3vw, 2.1rem); }
+        .market-heading p { margin: 0; color: var(--muted); }
+        .market-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 1rem; }
+        .market-card { overflow: hidden; background: #fff; border: 1px solid var(--line); border-radius: 10px; box-shadow: 0 5px 16px rgba(27, 51, 49, .06); transition: transform .2s, box-shadow .2s; cursor: pointer; }
+        .market-card:hover { transform: translateY(-4px); box-shadow: 0 12px 24px rgba(27, 51, 49, .13); }
+        .market-card img { display: block; width: 100%; height: 185px; object-fit: cover; background: #e9efec; }
+        .market-card-info { padding: .85rem 1rem 1rem; }
+        .market-card-category { color: #0a8f80; font-size: .75rem; font-weight: 700; text-transform: uppercase; }
+        .market-card h3 { margin: .25rem 0 .45rem; font-size: 1rem; }
+        .market-card p { min-height: 2.4em; margin: 0 0 .7rem; color: var(--muted); font-size: .85rem; }
+        .market-price { color: #d05b2d; font-weight: 800; }
+        .market-card-footer { display: flex; align-items: center; justify-content: space-between; gap: .5rem; }
+        .cart-add { padding: .4rem .55rem; border: 1px solid #b9ded7; border-radius: 6px; background: #effaf7; color: #087f72; cursor: pointer; font: inherit; font-size: .76rem; font-weight: 700; }
+        .bottom-tabs { position: fixed; right: 0; bottom: 0; left: 0; z-index: 900; display: flex; justify-content: center; gap: .25rem; padding: .55rem max(1rem, env(safe-area-inset-left)) calc(.55rem + env(safe-area-inset-bottom)); background: rgba(255,255,255,.96); border-top: 1px solid var(--line); box-shadow: 0 -5px 18px rgba(27,51,49,.1); }
+        .bottom-tabs a { display: grid; min-width: 82px; justify-items: center; gap: .1rem; padding: .3rem .55rem; border-radius: 7px; color: #62716f; font-size: .72rem; }
+        .bottom-tabs a:hover, .bottom-tabs a.active { background: #e8f5f1; color: #078575; }
+        .bottom-tabs strong { font-size: 1.2rem; line-height: 1; }
+        @media (max-width: 760px) { .market-hero { min-height: 510px; } .market-hero-content { padding-top: 5rem; } .search-row { grid-template-columns: 1fr; } .market-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } .market-card img { height: 145px; } .bottom-tabs a { min-width: 57px; } .bottom-tabs { gap: 0; } }
+        @media (max-width: 390px) { .market-grid { gap: .65rem; } .market-card-info { padding: .65rem; } .market-card img { height: 120px; } .bottom-tabs a { padding-inline: .2rem; } }
+    </style>
 </head>
-<body class="home-page">
-  <nav class="navbar home-navbar" aria-label="Navigation principale">
-    <div class="home-account" id="auth-container"></div>
-    <a class="navbar-logo" href="index.html" aria-label="B&G Shop accueil">
-      <img src="images/bglogo.jpeg" alt="B&G Shop" class="site-logo" />
-      <span>B&amp;G Shop</span>
-    </a>
-  </nav>
+<body class="market-page">
+    <nav class="navbar market-nav">
+        <div class="navbar-logo market-brand"><img src="images/bglogo.jpeg" alt="B&G Shop logo" class="site-logo" /><span>B&G Shop</span></div>
+        <div class="navbar-links market-links"><div id="auth-container"></div></div>
+    </nav>
 
-  <main class="home-main">
-    <section class="home-ad-stage" aria-label="Publicité et recherche">
-      <div class="home-ad-background" id="home-ad-background"></div>
-      <div class="home-ad-shade"></div>
-      <div class="home-ad-content">
-        <p class="home-kicker">La marketplace qui rapproche les bonnes affaires</p>
-        <h1>Trouvez. Comparez. Achetez.</h1>
-        <p class="home-ad-copy">Des articles sélectionnés près de chez vous, au même endroit.</p>
-        <div class="home-search-row">
-          <label class="market-search location-search"><span aria-hidden="true">⌖</span><input id="location-search" type="search" placeholder="Pays ou ville" autocomplete="off" /></label>
-          <label class="market-search product-search"><span aria-hidden="true">⌕</span><input id="product-search" type="search" placeholder="Que recherchez-vous ?" autocomplete="off" /></label>
-        </div>
-        <div class="category-strip" id="category-strip" aria-label="Catégories"></div>
-      </div>
-    </section>
+    <main class="page-content">
+        <section class="market-hero" aria-label="Recherche B&G Shop">
+            <video class="market-hero-video" id="hero-ad-video" autoplay muted loop playsinline></video>
+            <div class="market-hero-shade"></div>
+            <div class="market-hero-content">
+                <span class="eyebrow">La marketplace qui vous rapproche</span>
+                <h1>Trouvez votre prochain coup de cœur.</h1>
+                <p>Des articles sélectionnés près de chez vous, des vendeurs passionnés et de nouvelles trouvailles chaque jour.</p>
+                <div class="search-row">
+                    <label class="market-search"><span aria-hidden="true">⌖</span><input id="location-search" type="search" placeholder="Pays ou ville" aria-label="Rechercher un pays ou une ville" /></label>
+                    <label class="market-search"><span aria-hidden="true">⌕</span><input id="product-search" type="search" placeholder="Que recherchez-vous ?" aria-label="Rechercher un article" /></label>
+                </div>
+                <div class="category-strip" id="category-strip" aria-label="Catégories"></div>
+            </div>
+        </section>
 
-    <section class="trending-section home-products" id="trending">
-      <div class="home-section-heading"><div><p class="home-kicker">À découvrir maintenant</p><h2>Articles tendances</h2></div><a class="see-all-link" href="categories.html">Voir tout <span aria-hidden="true">→</span></a></div>
-      <div class="trending-grid" id="trending-products"></div>
-      <p class="search-empty" id="search-empty" hidden>Aucun article ne correspond à votre recherche.</p>
-    </section>
-  </main>
+        <section class="market-main" id="trending">
+            <div class="market-heading"><div><p class="eyebrow">Sélection B&G</p><h2>Articles tendances</h2></div><p id="result-count"></p></div>
+            <div class="market-grid" id="trending-products"></div>
+        </section>
+    </main>
 
-  <nav class="task-bar" aria-label="Accès rapides">
-    <a class="task-link active" href="index.html"><span class="task-icon">⌂</span><span>Accueil</span></a>
-    <a class="task-link" href="videos.html"><span class="task-icon">▶</span><span>Réel</span></a>
-    <a class="task-link" href="categories.html"><span class="task-icon">▢</span><span>Panier</span><b class="task-badge" hidden>0</b></a>
-    <a class="task-link" href="messages.html"><span class="task-icon">☵</span><span>Messages</span></a>
-    <a class="task-link" href="settings.html"><span class="task-icon">⚙</span><span>Paramètres</span></a>
-  </nav>
+    <nav class="bottom-tabs" aria-label="Navigation principale">
+        <a class="active" href="index.html"><strong>⌂</strong><span>Accueil</span></a>
+        <a href="videos.html"><strong>▶</strong><span>Réel</span></a>
+        <a href="panier.html"><strong>▢</strong><span>Panier</span></a>
+        <a href="messages.html"><strong>◌</strong><span>Messages</span></a>
+        <a href="settings.html"><strong>⚙</strong><span>Paramètres</span></a>
+    </nav>
 
-  <script src="js/app.js"></script>
-  <script>
-    const escapeHtml = (value) => String(value).replace(/[&<>'"]/g, (character) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[character]));
-    function renderHomeProducts(products) {
-      const container = document.getElementById('trending-products');
-      document.getElementById('search-empty').hidden = products.length > 0;
-      container.innerHTML = products.map((product) => `<article class="product-card" onclick="goToProduct(${product.id})"><div class="product-image-wrap"><img src="${escapeHtml(product.image)}" alt="${escapeHtml(product.title)}" class="product-image" /></div><div class="product-info"><span class="product-category">${escapeHtml(product.category)}</span><h3 class="product-title">${escapeHtml(product.title)}</h3><p class="product-description">${escapeHtml(product.description || '')}</p><strong class="product-price">${escapeHtml(product.price)} FCFA</strong></div></article>`).join('');
-    }
-    function filterHomeProducts() {
-      const query = document.getElementById('product-search').value.trim().toLowerCase();
-      renderHomeProducts(app.getProducts().filter((product) => `${product.title} ${product.category} ${product.description}`.toLowerCase().includes(query)));
-    }
-    function renderHomeCategories() {
-      document.getElementById('category-strip').innerHTML = app.getCategories().map((category) => `<button type="button" onclick="selectCategory('${escapeHtml(category.name)}')">${escapeHtml(category.name)}</button>`).join('');
-    }
-    function selectCategory(category) { document.getElementById('product-search').value = category; filterHomeProducts(); document.getElementById('trending').scrollIntoView({ behavior: 'smooth' }); }
-    function renderHomeAd() {
-      const background = document.getElementById('home-ad-background');
-      const videos = app.getVideos().filter((video) => app.getAdVideoIds().includes(video.id));
-      if (!videos.length) { background.innerHTML = '<div class="ad-fallback"><span>B&amp;G</span><small>Votre prochaine bonne affaire est ici</small></div>'; return; }
-      const video = document.createElement('video'); video.muted = true; video.autoplay = true; video.loop = true; video.playsInline = true; video.src = videos[0].videoUrl; background.appendChild(video); video.play().catch(() => {});
-    }
-    function goToProduct(productId) { window.location.href = `product-detail.html?id=${productId}`; }
-    document.addEventListener('DOMContentLoaded', () => { renderHomeProducts(app.getTrendingProducts()); renderHomeCategories(); renderHomeAd(); document.getElementById('product-search').addEventListener('input', filterHomeProducts); });
-  </script>
+    <script src="js/app.js"></script>
+    <script>
+        const escapeHtml = (value) => String(value || '').replace(/[&<>'"]/g, (char) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[char]));
+        function renderCategories() {
+            document.getElementById('category-strip').innerHTML = app.getCategories().map((category) => `<a href="categories.html?category=${encodeURIComponent(category.name)}">${escapeHtml(category.name)}</a>`).join('');
+        }
+        function renderProducts() {
+            const query = document.getElementById('product-search').value.trim().toLowerCase();
+            const products = app.getProducts().filter((product) => !query || `${product.title} ${product.category} ${product.description}`.toLowerCase().includes(query));
+            document.getElementById('result-count').textContent = `${products.length} article${products.length > 1 ? 's' : ''}`;
+            document.getElementById('trending-products').innerHTML = products.length ? products.map((product) => `<article class="market-card" onclick="goToProduct(${product.id})"><img src="${escapeHtml(product.image)}" alt="${escapeHtml(product.title)}" /><div class="market-card-info"><div class="market-card-category">${escapeHtml(product.category)}</div><h3>${escapeHtml(product.title)}</h3><p>${escapeHtml(product.description).slice(0, 72)}...</p><div class="market-card-footer"><div class="market-price">${product.price} FCFA</div><button class="cart-add" onclick="event.stopPropagation(); addToCart(${product.id})">Ajouter</button></div></div></article>`).join('') : '<p>Aucun article ne correspond à votre recherche.</p>';
+        }
+        function addToCart(productId) { app.addToCart(productId); window.location.href = 'panier.html'; }
+        function goToProduct(productId) { window.location.href = `product-detail.html?id=${productId}`; }
+        function openMessages() { window.location.href = app.checkAuth() ? 'messages.html' : 'login.html'; }
+        document.addEventListener('DOMContentLoaded', () => {
+            renderCategories(); renderProducts();
+            document.getElementById('product-search').addEventListener('input', renderProducts);
+            const videos = app.getVideos().filter((video) => app.getAdVideoIds().includes(video.id));
+            if (videos[0]) { const player = document.getElementById('hero-ad-video'); player.src = videos[0].videoUrl; player.play().catch(() => {}); }
+        });
+    </script>
 </body>
+</html>
+<!DOCTYPE html>
+<html lang="fr">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>B&G Shop | Bienvenue </title>
+        <link rel="stylesheet" href="styles.css" />
+        <style>
+            .navbar {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                padding: 1rem 2rem;
+                background: rgba(0, 0, 0, 0.3);
+                border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            }
+            .navbar-logo {
+                font-size: 1.5rem;
+                font-weight: bold;
+                color: var(--accent-2);
+            }
+
+            .navbar-links {
+                display: flex;
+                gap: 1.5rem;
+                align-items: center;
+            }
+
+            .navbar-links a {
+                color: var(--texte);
+                text-decoration: none;
+                transition: color 0.2s;
+            }
+
+            .navbar-links a:hover {
+                color: var(--accent-2);
+            }
+
+            #auth-container {
+                display: flex;
+                gap: 0.8rem;
+                align-items: center;
+                font-size: 0.9rem;
+            }
+
+            .trending-section {
+                padding: 4rem 2rem;
+                background: rgba(255, 255, 255, 0.03);
+            }
+
+            .trending-grid {
+                width: min(1200px, 100%);
+                margin: 0 auto;
+                display: grid;
+                grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+                gap: 1.5rem;
+            }
+
+            .product-card {
+                border-radius: 18px;
+                background: rgba(255, 255, 255, 0.07);
+                border: 1px solid var(--bordure);
+                overflow: hidden;
+                transition: transform 0.3s, box-shadow 0.3s;
+                cursor: pointer;
+            }
+
+            .product-card:hover {
+                transform: translateY(-8px);
+                box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+            }
+
+            .product-image {
+                width: 100%;
+                height: 200px;
+                object-fit: cover;
+                background: rgba(255, 255, 255, 0.05);
+            }
+
+            .product-info {
+                padding: 1.2rem;
+            }
+
+            .product-category {
+                font-size: 0.8rem;
+                color: var(--accent-2);
+                text-transform: uppercase;
+                font-weight: 600;
+            }
+
+            .product-title {
+                font-size: 1.1rem;
+                font-weight: 600;
+                margin: 0.5rem 0;
+            }
+
+            .product-description {
+                font-size: 0.9rem;
+                color: var(--texte-secondaire);
+                margin: 0.5rem 0 1rem;
+            }
+
+            .product-price {
+                font-size: 1.3rem;
+                color: var(--accent);
+                font-weight: 700;
+            }
+        </style>
+    </head>
+    <body>
+        <!-- Navigation -->
+        <nav class="navbar">
+            <div class="navbar-logo">
+                <img src="images/bglogo.jpeg" alt="B&G Shop logo" class="site-logo" />
+                <span style="font-size: 1.5rem; font-weight: bold; color: var(--accent-2)">B&G Shop</span>
+            </div>
+            <div class="navbar-links">
+                <a href="index.html">Accueil</a>
+                <a href="categories.html">Catégories</a>
+                <a href="videos.html">Vidéos</a>
+                <a href="messages.html">Messages</a>
+                <div id="auth-container"></div>
+            </div>
+        </nav>
+
+        <div class="page-content">
+            <!-- Hero Section -->
+            <header class="banniere">
+                <div class="contenu-banniere">
+                    <div class="texte-banniere">
+                        <p class="eyebrow">Boutique et services en un seul endroit</p>
+                        <h1>Bienvenue chez <span style="color: var(--accent-2);">B&G Shop</span></h1>
+                        <p>
+                            Découvrez des produits de qualité et des services fiables au même endroit. Des animaux et
+                            vêtements aux objets technologiques comme les téléphones, montres et casques audio, B&G Shop
+                            réunit confort, style et praticité.
+                        </p>
+                        <div class="actions-banniere">
+                            <a class="btn btn-primaire" href="#trending">Découvrir les tendances</a>
+                            <a class="btn btn-secondaire" href="categories.html">Toutes les catégories</a>
+                        </div>
+                        <ul class="liste-confiance">
+                            <li>Animaux</li>
+                            <li>fashion</li>
+                            <li>Articles tech</li>
+                            <li>Location de voitures</li>
+                        </ul>
+                    </div>
+
+                    <div class="carte-banniere">
+                        <h3>Populaires chez B&G Shop</h3>
+                        <div class="grille-cartes">
+                            <div class="carte-item">
+                                <strong>Téléphones intelligents</strong>
+                                <span>Des appareils modernes pour le quotidien</span>
+                            </div>
+                            <div class="carte-item">
+                                <strong>Montres élégantes</strong>
+                                <span>Des designs raffinés pour toutes occasions</span>
+                            </div>
+                            <div class="carte-item">
+                                <strong>Casques audio</strong>
+                                <span>Un son de qualité avec confort optimal</span>
+                            </div>
+                            <div class="carte-item">
+                                <strong>Location de voitures</strong>
+                                <span>Des solutions pratiques pour vos déplacements</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </header>
+
+            <!-- Trending Products Section -->
+            <section id="trending" class="trending-section">
+                <div style="width: min(1200px, 100%); margin: 0 auto">
+                    <div class="titre-section">
+                        <p class="eyebrow">Articles en tendance</p>
+                        <h2>Nos meilleures offres</h2>
+                        <p>Un mélange des meilleures catégories</p>
+                    </div>
+
+                    <div class="trending-grid" id="trending-products">
+                        <!-- Products will be loaded here -->
+                    </div>
+                </div>
+            </section>
+
+            <!-- Categories Preview Section -->
+            <section class="section alternative">
+                <div class="titre-section">
+                    <p class="eyebrow">Ce que vous trouverez</p>
+                    <h2>Découvrez nos catégories</h2>
+                    <p>Qualité, variété et valeur pour chaque besoin client.</p>
+                </div>
+
+                <div class="cartes">
+                    <article class="carte-produit">
+                        <h3>Animaux</h3>
+                        <p>Des animaux bien soignés pour votre foyer ou votre famille.</p>
+                    </article>
+                    <article class="carte-produit">
+                        <h3>Vêtements & Chaussures</h3>
+                        <p>Des tenues tendance et confortables pour tous les goûts.</p>
+                    </article>
+                    <article class="carte-produit">
+                        <h3>Électronique</h3>
+                        <p>Des appareils fiables, accessoires et gadgets intelligents.</p>
+                    </article>
+                    <article class="carte-produit">
+                        <h3>Accessoires & Cosmétiques</h3>
+                        <p>Des montres élégantes, casques et produits de beauté.</p>
+                    </article>
+                </div>
+            </section>
+
+            <!-- Services Section -->
+            <section class="section">
+                <div class="titre-section">
+                    <p class="eyebrow">Nos services</p>
+                    <h2>Plus qu'une boutique, une expérience complète</h2>
+                    <p>Nous proposons des services pratiques pour rendre vos achats plus simples et plus agréables.</p>
+                </div>
+
+                <div class="grille-services">
+                    <article class="carte-service">
+                        <h3>Location de voitures</h3>
+                        <p>Réservez un véhicule pour vos déplacements, voyages ou occasions spéciales.</p>
+                    </article>
+                    <article class="carte-service">
+                        <h3>Support rapide</h3>
+                        <p>Un accompagnement chaleureux pour vous aider à faire le bon choix.</p>
+                    </article>
+                    <article class="carte-service">
+                        <h3>Shopping pratique</h3>
+                        <p>Une expérience fluide et fiable du début à la fin.</p>
+                    </article>
+                </div>
+            </section>
+
+            <!-- CTA Section -->
+            <section class="cta">
+                <h2>Visitez B&G Shop dès aujourd'hui</h2>
+                <p>Découvrez des produits de qualité et des services fiables dans un endroit accueillant.</p>
+                <a class="btn btn-primaire" href="categories.html">Voir tous les produits</a>
+            </section>
+
+            <!-- Fixed message button -->
+            <button class="fixed-message-btn" title="Messages" onclick="openMessages()">💬</button>
+        </div>
+
+        <script src="js/app.js"></script>
+        <script>
+              // Load trending products on homepage
+              function loadTrendingProducts() {
+                  const products = app.getTrendingProducts();
+                  const container = document.getElementById("trending-products");
+
+                  if (products.length === 0) {
+                      container.innerHTML =
+                          '<p style="text-align: center; color: var(--texte-secondaire); grid-column: 1/-1;">Aucun article en tendance pour le moment</p>';
+                      return;
+                  }
+
+                  container.innerHTML = products
+                  .map(
+                      (product) => `
+            <div class="product-card" onclick="goToProduct(${product.id})">
+              <img src="${product.image}" alt="${product.title}" class="product-image" />
+              <div class="product-info">
+                <div class="product-category">${product.category}</div>
+                <div class="product-title">${product.title}</div>
+                <div class="product-description">${product.description.substring(0, 60)}...</div>
+                <div class="product-price">${product.price} FCFA</div>
+              </div>
+            </div>
+                    `,
+                  )
+                  .join("");
+              }
+
+              function goToProduct(productId) {
+                  window.location.href = `product-detail.html?id=${productId}`;
+              }
+
+              // Load on page load
+              document.addEventListener("DOMContentLoaded", () => {
+                  loadTrendingProducts();
+                  updateAuthUI();
+              });
+
+              function openMessages() {
+                  // if user not logged show login, otherwise open messages page
+                  const user = app.checkAuth();
+                  if (!user) {
+                      window.location.href = "login.html";
+                      return;
+                  }
+                  window.location.href = "messages.html";
+              }
+        </script>
+    </body>
 </html>

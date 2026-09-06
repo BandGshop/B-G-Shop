@@ -97,7 +97,14 @@ const app = {
     if (!localStorage.getItem('bgshop_notifications')) {
       localStorage.setItem('bgshop_notifications', JSON.stringify([]));
     }
-    if (!localStorage.getItem('bgshop_ad_videos')) {
+    const videos = JSON.parse(localStorage.getItem('bgshop_videos') || '[]');
+    const storedAds = JSON.parse(localStorage.getItem('bgshop_ad_videos') || '[]');
+    if (storedAds.length && storedAds.every((ad) => typeof ad !== 'object')) {
+      const adIds = new Set(storedAds);
+      const legacyAds = videos.filter((video) => adIds.has(video.id));
+      localStorage.setItem('bgshop_ad_videos', JSON.stringify(legacyAds));
+      localStorage.setItem('bgshop_videos', JSON.stringify(videos.filter((video) => !adIds.has(video.id))));
+    } else if (!localStorage.getItem('bgshop_ad_videos')) {
       localStorage.setItem('bgshop_ad_videos', JSON.stringify([]));
     }
   },
@@ -275,11 +282,26 @@ const app = {
   },
 
   getAdVideoIds() {
-    return JSON.parse(localStorage.getItem('bgshop_ad_videos') || '[]');
+    return this.getAdVideos().map((video) => video.id);
   },
 
   setAdVideoIds(videoIds) {
-    localStorage.setItem('bgshop_ad_videos', JSON.stringify(videoIds));
+    const selectedIds = new Set(videoIds);
+    const ads = this.getAdVideos().filter((video) => selectedIds.has(video.id));
+    localStorage.setItem('bgshop_ad_videos', JSON.stringify(ads));
+  },
+
+  getAdVideos() {
+    return JSON.parse(localStorage.getItem('bgshop_ad_videos') || '[]');
+  },
+
+  addAdVideo(video) {
+    const ads = this.getAdVideos();
+    video.id = Math.max(...ads.map((ad) => ad.id || 0), 0) + 1;
+    video.postedDate = new Date().toISOString();
+    ads.push(video);
+    localStorage.setItem('bgshop_ad_videos', JSON.stringify(ads));
+    return video;
   },
 
   getVideoById(videoId) {

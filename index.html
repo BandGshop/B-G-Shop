@@ -102,7 +102,7 @@
         document.addEventListener('DOMContentLoaded', () => {
             renderCategories(); renderProducts();
             document.getElementById('product-search').addEventListener('input', renderProducts);
-            const videos = app.getVideos().filter((video) => app.getAdVideoIds().includes(video.id));
+            const videos = app.getAdVideos().filter((video) => app.getAdVideoIds().includes(video.id));
             if (videos[0]) { const player = document.getElementById('hero-ad-video'); player.src = videos[0].videoUrl; player.play().catch(() => {}); }
         });
     </script>

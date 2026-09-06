@@ -82,7 +82,7 @@
     function toggleOptions(prefix) { const type = $(prefix + '-bg-type').value; $(prefix + '-color-label').style.display = type === 'color' ? 'grid' : 'none'; $(prefix + '-image-label').style.display = type === 'image' ? 'grid' : 'none'; }
     function readFile(input) { return input.files[0] ? app.getVideoDataURL(input.files[0]) : Promise.resolve(''); }
     function renderHelp() { const requests = app.getMessages().filter((message) => message.receiver === 'admin'); $('help-list').innerHTML = requests.length ? requests.map((message) => `<article class="settings-item"><strong>${message.userEmail}</strong><p>${message.text}</p><small>${new Date(message.createdDate).toLocaleString()}</small></article>`).join('') : '<p class="settings-empty">Aucune demande.</p>'; }
-    function renderAdManagement() { const selected = app.getAdVideoIds(); const videos = app.getVideos(); $('ad-video-list').innerHTML = videos.length ? videos.map((video) => `<label class="settings-item settings-choice"><input type="checkbox" value="${video.id}" ${selected.includes(video.id) ? 'checked' : ''}><span>${video.title}</span></label>`).join('') : '<p class="settings-empty">Aucune vidéo publiée.</p>'; }
+    function renderAdManagement() { const selected = app.getAdVideoIds(); const videos = app.getAdVideos(); $('ad-video-list').innerHTML = videos.length ? videos.map((video) => `<label class="settings-item settings-choice"><input type="checkbox" value="${video.id}" ${selected.includes(video.id) ? 'checked' : ''}><span>${video.title}</span></label>`).join('') : '<p class="settings-empty">Aucune vidéo publicitaire.</p>'; }
     async function importAdVideos(event) {
       event.preventDefault(); const files = [...$('ad-video-upload').files]; const status = $('ad-upload-status'); const adVideoIds = app.getAdVideoIds();
       if (!files.length) return;
@@ -91,7 +91,7 @@
         for (const file of files) {
           if (!file.type.startsWith('video/')) continue;
           const compressedFile = await app.compressVideoFile(file); const videoUrl = await app.getVideoDataURL(compressedFile);
-          const video = app.addVideo({ title: file.name.replace(/\.[^/.]+$/, ''), description: 'Vidéo publicitaire B&G Shop', videoUrl, originalName: file.name, duration: compressedFile.duration || null });
+          const video = app.addAdVideo({ title: file.name.replace(/\.[^/.]+$/, ''), description: 'Vidéo publicitaire B&G Shop', videoUrl, originalName: file.name, duration: compressedFile.duration || null });
           if (!adVideoIds.includes(video.id)) adVideoIds.push(video.id);
         }
         app.setAdVideoIds(adVideoIds); renderAdManagement(); $('ad-upload-form').reset(); status.textContent = 'Vidéos importées et ajoutées à la barre publicitaire.';

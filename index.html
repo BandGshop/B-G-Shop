@@ -44,11 +44,29 @@
         .bottom-tabs a { display: grid; min-width: 82px; justify-items: center; gap: .1rem; padding: .3rem .55rem; border-radius: 7px; color: #62716f; font-size: .72rem; }
         .bottom-tabs a:hover, .bottom-tabs a.active { background: #e8f5f1; color: #078575; }
         .bottom-tabs strong { font-size: 1.2rem; line-height: 1; }
+        .site-splash { position: fixed; inset: 0; z-index: 2000; display: grid; place-items: center; overflow: hidden; background: #fff2ea; opacity: 1; visibility: visible; transition: opacity .55s ease, visibility .55s ease; }
+        .site-splash::before, .site-splash::after { content: ''; position: absolute; border-radius: 50%; pointer-events: none; }
+        .site-splash::before { width: min(68vw, 640px); height: min(68vw, 640px); background: #ffd65d; opacity: .5; transform: translate(-38%, -34%); }
+        .site-splash::after { width: min(70vw, 660px); height: min(70vw, 660px); background: #ce0e58; opacity: .18; transform: translate(42%, 38%); }
+        .site-splash.is-hidden { opacity: 0; visibility: hidden; pointer-events: none; }
+        .site-splash-content { position: relative; z-index: 1; display: grid; justify-items: center; gap: 1rem; animation: splash-arrival .8s cubic-bezier(.2,.8,.2,1) both; }
+        .site-splash-logo { width: clamp(150px, 28vw, 260px); height: clamp(150px, 28vw, 260px); object-fit: cover; border: 10px solid rgba(255,255,255,.9); border-radius: 28%; box-shadow: 0 22px 55px rgba(59,29,23,.2); }
+        .site-splash-name { margin: 0; color: #3b1d17; font-size: clamp(1.7rem, 5vw, 2.8rem); font-weight: 800; letter-spacing: .04em; }
+        .site-splash-tagline { margin: -.65rem 0 0; color: rgba(59,29,23,.72); font-size: .82rem; letter-spacing: .18em; text-transform: uppercase; }
+        @keyframes splash-arrival { from { opacity: 0; transform: scale(.88); } to { opacity: 1; transform: scale(1); } }
+        @media (prefers-reduced-motion: reduce) { .site-splash { transition-duration: .2s; } .site-splash-content { animation: none; } }
         @media (max-width: 760px) { .market-hero { min-height: 510px; } .market-hero-content { padding-top: 5rem; } .search-row { grid-template-columns: 1fr; } .market-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } .market-card img { height: 145px; } .bottom-tabs a { min-width: 57px; } .bottom-tabs { gap: 0; } }
         @media (max-width: 390px) { .market-grid { gap: .65rem; } .market-card-info { padding: .65rem; } .market-card img { height: 120px; } .bottom-tabs a { padding-inline: .2rem; } }
     </style>
 </head>
 <body class="market-page">
+    <div class="site-splash" id="site-splash" role="status" aria-label="Chargement de B&G Shop">
+        <div class="site-splash-content">
+            <img src="images/bglogo.jpeg" alt="B&G Shop" class="site-splash-logo" />
+            <p class="site-splash-name">B&amp;G Shop</p>
+            <p class="site-splash-tagline">Trouvez votre prochain coup de cœur</p>
+        </div>
+    </div>
     <nav class="navbar market-nav">
         <div class="navbar-logo market-brand"><img src="images/bglogo.jpeg" alt="B&G Shop logo" class="site-logo" /><span>B&G Shop</span></div>
         <div class="navbar-links market-links"><div id="auth-container"></div></div>
@@ -100,6 +118,9 @@
         function goToProduct(productId) { window.location.href = `product-detail.html?id=${productId}`; }
         function openMessages() { window.location.href = app.checkAuth() ? 'messages.html' : 'login.html'; }
         document.addEventListener('DOMContentLoaded', () => {
+            const splash = document.getElementById('site-splash');
+            const splashDuration = window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 400 : 1800;
+            window.setTimeout(() => splash.classList.add('is-hidden'), splashDuration);
             renderCategories(); renderProducts();
             document.getElementById('product-search').addEventListener('input', renderProducts);
             const videos = app.getAdVideos().filter((video) => app.getAdVideoIds().includes(video.id));

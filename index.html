@@ -55,7 +55,18 @@
         .site-splash-tagline { margin: -.65rem 0 0; color: rgba(59,29,23,.72); font-size: .82rem; letter-spacing: .18em; text-transform: uppercase; }
         @keyframes splash-arrival { from { opacity: 0; transform: scale(.88); } to { opacity: 1; transform: scale(1); } }
         @media (prefers-reduced-motion: reduce) { .site-splash { transition-duration: .2s; } .site-splash-content { animation: none; } }
+        .market-footer { margin-top: 1rem; padding: 2.5rem max(1rem, calc((100% - 1180px) / 2)) 6.5rem; background: rgba(36,51,56,.94); color: rgba(255,255,255,.8); }
+        .market-footer-inner { display: grid; grid-template-columns: minmax(220px, 1.4fr) repeat(2, minmax(140px, 1fr)); gap: 2rem; width: min(1180px, 100%); margin: 0 auto; }
+        .market-footer-brand { display: flex; align-items: center; gap: .7rem; color: #fff; font-size: 1.2rem; font-weight: 800; }
+        .market-footer-brand img { width: 42px; height: 42px; object-fit: cover; border-radius: 10px; }
+        .market-footer p { max-width: 300px; margin: .9rem 0 0; font-size: .9rem; line-height: 1.6; }
+        .market-footer h2 { margin: 0 0 .75rem; color: #ffd65d; font-size: .86rem; letter-spacing: .08em; text-transform: uppercase; }
+        .market-footer ul { display: grid; gap: .4rem; margin: 0; padding: 0; list-style: none; }
+        .market-footer a { color: rgba(255,255,255,.78); font-size: .9rem; }
+        .market-footer a:hover { color: #fff; }
+        .market-footer-bottom { width: min(1180px, 100%); margin: 2rem auto 0; padding-top: 1rem; border-top: 1px solid rgba(255,255,255,.16); color: rgba(255,255,255,.58); font-size: .78rem; }
         @media (max-width: 760px) { .market-hero { min-height: 510px; } .market-hero-content { padding-top: 5rem; } .search-row { grid-template-columns: 1fr; } .market-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } .market-card img { height: 145px; } .bottom-tabs a { min-width: 57px; } .bottom-tabs { gap: 0; } }
+        @media (max-width: 760px) { .market-footer { padding-top: 2rem; } .market-footer-inner { grid-template-columns: 1fr 1fr; gap: 1.5rem; } .market-footer-brand-block { grid-column: 1 / -1; } }
         @media (max-width: 390px) { .market-grid { gap: .65rem; } .market-card-info { padding: .65rem; } .market-card img { height: 120px; } .bottom-tabs a { padding-inline: .2rem; } }
     </style>
 </head>
@@ -93,6 +104,32 @@
             <div class="market-grid" id="trending-products"></div>
         </section>
     </main>
+
+    <footer class="market-footer">
+        <div class="market-footer-inner">
+            <div class="market-footer-brand-block">
+                <div class="market-footer-brand"><img src="images/bglogo.jpeg" alt="B&G Shop" /> <span>B&amp;G Shop</span></div>
+                <p>La marketplace qui vous rapproche des bonnes affaires et des vendeurs passionnés.</p>
+            </div>
+            <div>
+                <h2>Explorer</h2>
+                <ul>
+                    <li><a href="index.html#trending">Articles tendances</a></li>
+                    <li><a href="categories.html">Toutes les catégories</a></li>
+                    <li><a href="videos.html">Vidéos</a></li>
+                </ul>
+            </div>
+            <div>
+                <h2>Votre espace</h2>
+                <ul>
+                    <li><a href="login.html">Se connecter</a></li>
+                    <li><a href="panier.html">Mon panier</a></li>
+                    <li><a href="settings.html">Paramètres</a></li>
+                </ul>
+            </div>
+        </div>
+        <div class="market-footer-bottom">© 2026 B&amp;G Shop. Tous droits réservés.</div>
+    </footer>
 
     <nav class="bottom-tabs" aria-label="Navigation principale">
         <a class="active" href="index.html"><strong>⌂</strong><span>Accueil</span></a>

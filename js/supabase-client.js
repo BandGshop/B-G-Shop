@@ -1,7 +1,7 @@
 /* Supabase browser client. Replace both values with your project settings. */
 window.bgSupabaseConfig = {
-  url: 'https://YOUR_PROJECT_REF.supabase.co',
-  anonKey: 'YOUR_SUPABASE_ANON_KEY'
+  url: 'https://jnhlulosivgmekowkndv.supabase.co',
+  anonKey: 'sb_publishable_6ysxfhQvacphBssvulYOMg_3nNDqBxE'
 };
 
 window.bgSupabase = {

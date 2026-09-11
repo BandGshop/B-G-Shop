@@ -908,6 +908,8 @@
                 }
                 const videos = app.getVideos().filter((video) => video.id !== videoId);
                 localStorage.setItem("bgshop_videos", JSON.stringify(videos));
+                const client = window.bgSupabase?.getClient();
+                if (client) client.from('videos').delete().eq('id', videoId);
                 loadVideoManagement();
                 loadDashboard();
             }
@@ -919,14 +921,9 @@
             }
 
             function updateOrderStatus(orderId, newStatus) {
-                const orders = app.getOrders();
-                const order = orders.find((o) => o.id === orderId);
-                if (order) {
-                    order.status = newStatus;
-                    localStorage.setItem("bgshop_orders", JSON.stringify(orders));
-                    loadOrders();
-                    loadDashboard();
-                }
+                app.updateOrderStatus(orderId, newStatus);
+                loadOrders();
+                loadDashboard();
             }
 
             function handleAdminLogout() {

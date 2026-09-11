@@ -4,7 +4,98 @@ const app = {
   init() {
     this.ensureDefaultData();
     this.checkAuth();
-    this.syncProductsFromSupabase();
+    this.hydrateFromSupabase();
+  },
+
+  async hydrateFromSupabase() {
+    const client = window.bgSupabase?.getClient();
+    if (!client) return;
+    const { data: sessionData } = await client.auth.getSession();
+    if (sessionData.session?.user) {
+      const authUser = sessionData.session.user;
+      const { data: profile } = await client.from('profiles').select('*').eq('id', authUser.id).maybeSingle();
+      localStorage.setItem('bgshop_currentUser', JSON.stringify(profile || {
+        id: authUser.id,
+        email: authUser.email,
+        name: authUser.user_metadata?.name || authUser.email?.split('@')[0],
+        role: 'user'
+      }));
+    }
+    await this.syncProductsFromSupabase();
+
+    const { data: orders } = await client.from('orders').select('*, order_items(*)').order('created_at', { ascending: false });
+    if (orders) localStorage.setItem('bgshop_orders', JSON.stringify(orders.map((order) => ({
+      id: order.id,
+      userId: order.customer_id,
+      customerName: order.customer_name,
+      customerPhone: order.customer_phone,
+      customerAddress: order.customer_address,
+      status: order.status,
+      createdDate: order.created_at,
+      productId: order.order_items?.[0]?.product_id,
+      productTitle: order.order_items?.[0]?.product_title,
+      productPrice: order.order_items?.[0]?.product_price
+    }))));
+
+    const { data: messages } = await client.from('messages').select('*').order('created_at', { ascending: true });
+    if (messages) localStorage.setItem('bgshop_messages', JSON.stringify(messages.map((message) => ({
+      id: message.id,
+      userId: message.user_id,
+      userEmail: message.user_id,
+      sender: message.sender_id,
+      receiver: message.receiver_role === 'admin' ? 'admin' : message.user_id,
+      text: message.text,
+      isReadByAdmin: message.is_read_by_admin,
+      isReadByUser: message.is_read_by_user,
+      createdDate: message.created_at
+    }))));
+
+    const { data: videos } = await client.from('videos').select('*').order('created_at', { ascending: false });
+    if (videos) {
+      const videoIds = videos.map((video) => video.id);
+      const [{ data: views }, { data: likes }, { data: comments }, { data: favorites }] = await Promise.all([
+        client.from('video_views').select('*').in('video_id', videoIds),
+        client.from('video_likes').select('*').in('video_id', videoIds),
+        client.from('video_comments').select('*').in('video_id', videoIds),
+        client.from('video_favorites').select('*').in('video_id', videoIds)
+      ]);
+      localStorage.setItem('bgshop_videos', JSON.stringify(videos.map((video) => ({
+        id: video.id,
+        title: video.title,
+        description: video.description,
+        videoUrl: video.video_url,
+        postedDate: video.created_at,
+        views: (views || []).filter((item) => item.video_id === video.id).map((item) => ({ userId: item.user_id, date: item.created_at })),
+        likes: (likes || []).filter((item) => item.video_id === video.id).map((item) => ({ userId: item.user_id, date: item.created_at })),
+        comments: (comments || []).filter((item) => item.video_id === video.id).map((item) => ({ id: item.id, userId: item.user_id, text: item.text, date: item.created_at }))
+      }))));
+      localStorage.setItem('bgshop_favorites_remote', JSON.stringify(favorites || []));
+    }
+
+    const { data: notifications } = await client.from('notifications').select('*').order('created_at', { ascending: false });
+    if (notifications) localStorage.setItem('bgshop_notifications', JSON.stringify(notifications.map((item) => ({ ...item, createdDate: item.created_at }))));
+    const user = this.checkAuth();
+    if (user?.id) {
+      const [{ data: settings }, { data: cartItems }, { data: collections }] = await Promise.all([
+        client.from('user_settings').select('*').eq('user_id', user.id).maybeSingle(),
+        client.from('cart_items').select('product_id').eq('cart_id', user.id),
+        client.from('product_collections').select('product_id, collection').eq('user_id', user.id)
+      ]);
+      if (settings) {
+        localStorage.setItem(`bgshop_settings_${user.email}`, JSON.stringify({
+          language: settings.language,
+          siteBackground: settings.site_background,
+          messageBackground: settings.message_background
+        }));
+      }
+      if (cartItems) localStorage.setItem('bgshop_cart', JSON.stringify(cartItems.map((item) => item.product_id)));
+      if (collections) {
+        for (const key of ['liked', 'favorites']) {
+          localStorage.setItem(`bgshop_product_${key}_${user.email}`, JSON.stringify(collections.filter((item) => item.collection === key).map((item) => item.product_id)));
+        }
+      }
+    }
+    window.dispatchEvent(new CustomEvent('bgshop-data-synced'));
   },
 
   async syncProductsFromSupabase() {
@@ -187,6 +278,8 @@ const app = {
   },
 
   logout() {
+    const client = window.bgSupabase?.getClient();
+    if (client) client.auth.signOut();
     localStorage.removeItem('bgshop_currentUser');
   },
 
@@ -239,10 +332,18 @@ const app = {
     const cart = this.getCart();
     if (!cart.includes(productId)) cart.push(productId);
     localStorage.setItem('bgshop_cart', JSON.stringify(cart));
+    const user = this.checkAuth();
+    const client = window.bgSupabase?.getClient();
+    if (client && user?.id) {
+      client.from('carts').upsert({ user_id: user.id }).then(() => client.from('cart_items').upsert({ cart_id: user.id, product_id: productId, quantity: 1 }));
+    }
   },
 
   removeFromCart(productId) {
     localStorage.setItem('bgshop_cart', JSON.stringify(this.getCart().filter((id) => id !== productId)));
+    const user = this.checkAuth();
+    const client = window.bgSupabase?.getClient();
+    if (client && user?.id) client.from('cart_items').delete().eq('cart_id', user.id).eq('product_id', productId);
   },
 
   getUserSettings(userEmail) {
@@ -259,6 +360,14 @@ const app = {
     if (!userEmail) return;
     localStorage.setItem(`bgshop_settings_${userEmail}`, JSON.stringify(settings));
     this.applyUserSettings(settings);
+    const user = this.checkAuth();
+    const client = window.bgSupabase?.getClient();
+    if (client && user?.id) client.from('user_settings').upsert({
+      user_id: user.id,
+      language: settings.language,
+      site_background: settings.siteBackground,
+      message_background: settings.messageBackground
+    });
   },
 
   applyUserSettings(settings) {
@@ -282,6 +391,13 @@ const app = {
     const index = ids.indexOf(productId);
     if (index >= 0) ids.splice(index, 1); else ids.push(productId);
     localStorage.setItem(`bgshop_product_${key}_${userEmail}`, JSON.stringify(ids));
+    const user = this.checkAuth();
+    const client = window.bgSupabase?.getClient();
+    if (client && user?.id) {
+      const query = client.from('product_collections').delete().eq('product_id', productId).eq('user_id', user.id).eq('collection', key);
+      if (ids.includes(productId)) query.then(() => client.from('product_collections').insert({ product_id: productId, user_id: user.id, collection: key }));
+      else query;
+    }
     return ids.includes(productId);
   },
 
@@ -399,7 +515,11 @@ const app = {
 
   getFavoriteVideoIds(userEmail) {
     if (!userEmail) return [];
-    return JSON.parse(localStorage.getItem(`bgshop_favorites_${userEmail}`) || '[]');
+    const user = this.checkAuth();
+    const remoteFavorites = JSON.parse(localStorage.getItem('bgshop_favorites_remote') || '[]');
+    const localFavorites = JSON.parse(localStorage.getItem(`bgshop_favorites_${userEmail}`) || '[]');
+    const remoteIds = remoteFavorites.filter((favorite) => favorite.user_id === user?.id).map((favorite) => favorite.video_id);
+    return remoteIds.length ? remoteIds : localFavorites;
   },
 
   toggleVideoFavorite(videoId, userEmail) {
@@ -411,6 +531,13 @@ const app = {
       favorites.push(videoId);
     }
     localStorage.setItem(`bgshop_favorites_${userEmail}`, JSON.stringify(favorites));
+    const user = this.checkAuth();
+    const client = window.bgSupabase?.getClient();
+    if (client && user?.id) {
+      const query = client.from('video_favorites').delete().eq('video_id', videoId).eq('user_id', user.id);
+      if (favorites.includes(videoId)) query.then(() => client.from('video_favorites').insert({ video_id: videoId, user_id: user.id }));
+      else query;
+    }
     return favorites.includes(videoId);
   },
 
@@ -423,6 +550,27 @@ const app = {
     video.comments = [];
     videos.push(video);
     localStorage.setItem('bgshop_videos', JSON.stringify(videos));
+    const client = window.bgSupabase?.getClient();
+    const user = this.checkAuth();
+    if (client && user?.id) {
+      (async () => {
+        let videoUrl = video.videoUrl;
+        if (videoUrl?.startsWith('data:')) {
+          const blob = await fetch(videoUrl).then((response) => response.blob());
+          const path = `${user.id}/${Date.now()}-${(video.originalName || 'video.webm').replace(/[^a-z0-9._-]/gi, '_')}`;
+          const { error: uploadError } = await client.storage.from('videos').upload(path, blob, { contentType: blob.type, upsert: false });
+          if (uploadError) throw uploadError;
+          videoUrl = client.storage.from('videos').getPublicUrl(path).data.publicUrl;
+        }
+        const { error } = await client.from('videos').insert({
+          author_id: user.id,
+          title: video.title,
+          description: video.description,
+          video_url: videoUrl
+        });
+        if (error) console.error('Vidéo non enregistrée dans Supabase.', error);
+      })().catch((error) => console.error('Upload vidéo Supabase impossible.', error));
+    }
     return video;
   },
 
@@ -438,6 +586,8 @@ const app = {
         date: new Date().toISOString(),
       });
       localStorage.setItem('bgshop_videos', JSON.stringify(videos));
+      const client = window.bgSupabase?.getClient();
+      if (client && user?.id) client.from('video_views').upsert({ video_id: videoId, user_id: user.id });
     }
     return video;
   },
@@ -457,6 +607,12 @@ const app = {
       });
     }
     localStorage.setItem('bgshop_videos', JSON.stringify(videos));
+    const client = window.bgSupabase?.getClient();
+    if (client && user?.id) {
+      const query = client.from('video_likes').delete().eq('video_id', videoId).eq('user_id', user.id);
+      if (likedIndex < 0) query.then(() => client.from('video_likes').insert({ video_id: videoId, user_id: user.id }));
+      else query;
+    }
     return video;
   },
 
@@ -468,6 +624,9 @@ const app = {
     comment.date = new Date().toISOString();
     video.comments.push(comment);
     localStorage.setItem('bgshop_videos', JSON.stringify(videos));
+    const client = window.bgSupabase?.getClient();
+    const user = this.checkAuth();
+    if (client && user?.id) client.from('video_comments').insert({ video_id: videoId, user_id: user.id, text: comment.text });
     return comment;
   },
 
@@ -588,6 +747,14 @@ const app = {
     message.isReadByUser = message.receiver === 'admin' ? true : false;
     messages.push(message);
     localStorage.setItem('bgshop_messages', JSON.stringify(messages));
+    const user = this.checkAuth();
+    const client = window.bgSupabase?.getClient();
+    if (client && user?.id) client.from('messages').insert({
+      user_id: user.id,
+      sender_id: user.id,
+      receiver_role: message.receiver === 'admin' ? 'admin' : 'user',
+      text: message.text
+    });
     return message;
   },
 
@@ -624,6 +791,8 @@ const app = {
       }
     });
     localStorage.setItem('bgshop_messages', JSON.stringify(messages));
+    const client = window.bgSupabase?.getClient();
+    if (client) client.from('messages').update({ is_read_by_admin: true }).eq('user_id', userEmail).eq('receiver_role', 'admin');
   },
 
   markThreadReadByUser(userEmail) {
@@ -634,6 +803,9 @@ const app = {
       }
     });
     localStorage.setItem('bgshop_messages', JSON.stringify(messages));
+    const client = window.bgSupabase?.getClient();
+    const user = this.checkAuth();
+    if (client && user?.id) client.from('messages').update({ is_read_by_user: true }).eq('user_id', user.id).eq('receiver_role', 'user');
   },
 
   getUnreadMessagesCountForUser(userEmail) {
@@ -648,9 +820,29 @@ const app = {
     const notifications = this.getNotifications();
     notifications.unshift({ ...notification, id: Date.now(), createdDate: new Date().toISOString() });
     localStorage.setItem('bgshop_notifications', JSON.stringify(notifications));
+    const client = window.bgSupabase?.getClient();
+    const user = this.checkAuth();
+    if (client && user?.id) client.from('notifications').insert({ title: notification.title, text: notification.text, created_by: user.id });
+  },
+
+  updateOrderStatus(orderId, status) {
+    const orders = this.getOrders();
+    const order = orders.find((item) => item.id === orderId);
+    if (!order) return;
+    order.status = status;
+    localStorage.setItem('bgshop_orders', JSON.stringify(orders));
+    const client = window.bgSupabase?.getClient();
+    if (client) client.from('orders').update({ status }).eq('id', orderId);
   },
 
   changeAdminPassword(email, currentPassword, newPassword) {
+    const client = window.bgSupabase?.getClient();
+    if (client) {
+      client.auth.signInWithPassword({ email, password: currentPassword }).then(({ error }) => {
+        if (!error) client.auth.updateUser({ password: newPassword });
+      });
+      return true;
+    }
     const users = JSON.parse(localStorage.getItem('bgshop_users'));
     const admin = users.find((user) => user.email === email && user.role === 'admin');
     if (!admin || admin.password !== currentPassword) return false;

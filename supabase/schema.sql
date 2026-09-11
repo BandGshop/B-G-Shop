@@ -1,5 +1,9 @@
 create extension if not exists "pgcrypto";
 
+insert into storage.buckets (id, name, public)
+values ('videos', 'videos', true)
+on conflict (id) do nothing;
+
 create type public.user_role as enum ('user', 'admin');
 create type public.order_status as enum ('pending', 'completed', 'cancelled');
 
@@ -74,6 +78,13 @@ create table public.video_views (
 );
 
 create table public.video_likes (
+  video_id bigint not null references public.videos(id) on delete cascade,
+  user_id uuid not null references public.profiles(id) on delete cascade,
+  created_at timestamptz not null default now(),
+  primary key (video_id, user_id)
+);
+
+create table public.video_favorites (
   video_id bigint not null references public.videos(id) on delete cascade,
   user_id uuid not null references public.profiles(id) on delete cascade,
   created_at timestamptz not null default now(),
@@ -180,6 +191,7 @@ alter table public.messages enable row level security;
 alter table public.videos enable row level security;
 alter table public.video_views enable row level security;
 alter table public.video_likes enable row level security;
+alter table public.video_favorites enable row level security;
 alter table public.video_comments enable row level security;
 alter table public.product_collections enable row level security;
 alter table public.carts enable row level security;
@@ -254,6 +266,8 @@ create policy video_views_owner on public.video_views
 for all to authenticated using (user_id = auth.uid()) with check (user_id = auth.uid());
 create policy video_likes_owner on public.video_likes
 for all to authenticated using (user_id = auth.uid()) with check (user_id = auth.uid());
+create policy video_favorites_owner on public.video_favorites
+for all to authenticated using (user_id = auth.uid()) with check (user_id = auth.uid());
 create policy video_comments_read_public on public.video_comments
 for select using (true);
 create policy video_comments_insert_authenticated on public.video_comments
@@ -278,6 +292,13 @@ create policy ad_videos_read_public on public.ad_videos
 for select using (true);
 create policy ad_videos_manage_admin on public.ad_videos
 for all to authenticated using (public.is_admin()) with check (public.is_admin());
+
+create policy video_storage_read_public on storage.objects
+for select using (bucket_id = 'videos');
+create policy video_storage_upload_authenticated on storage.objects
+for insert to authenticated with check (bucket_id = 'videos');
+create policy video_storage_delete_admin on storage.objects
+for delete to authenticated using (bucket_id = 'videos' and public.is_admin());
 
 insert into public.products (title, category, price, image, description, trending)
 values

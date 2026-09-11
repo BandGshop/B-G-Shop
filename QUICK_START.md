@@ -30,11 +30,13 @@ Le site possède maintenant un schéma PostgreSQL prêt pour Supabase dans [`sup
 
 Le schéma active la sécurité RLS : les produits et vidéos sont consultables publiquement, tandis que les commandes, messages, paniers et réglages restent limités à leur propriétaire ou à un administrateur. Le site fonctionne encore en mode local tant que la couche JavaScript Supabase n’est pas branchée aux pages.
 
+Si vous avez déjà exécuté l’ancien schéma, exécutez uniquement [`supabase/complete-migration.sql`](supabase/complete-migration.sql) dans Supabase SQL Editor. Il ajoute les favoris vidéo et le stockage sécurisé des vidéos sans recréer les tables existantes.
+
 ### Connecter le site
 
 Dans [js/supabase-client.js](js/supabase-client.js), remplacez `YOUR_PROJECT_REF` par l’identifiant de votre projet et `YOUR_SUPABASE_ANON_KEY` par la clé **anon public** copiée dans **Project Settings > API**. Ne mettez jamais la clé `service_role` dans ce fichier.
 
-Le site chargera alors les produits depuis Supabase et utilisera Supabase Auth pour les connexions et inscriptions. Les fonctions non encore migrées gardent leur stockage local de secours jusqu’à leur remplacement par les tables correspondantes.
+Le site charge désormais les données depuis Supabase et utilise Supabase Auth pour les connexions et inscriptions. `localStorage` sert seulement de cache de compatibilité hors ligne; la source distante et les écritures sont Supabase.
 
 ### QR code du site
 

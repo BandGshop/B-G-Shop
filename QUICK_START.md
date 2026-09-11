@@ -4,7 +4,7 @@
 
 Un site e-commerce complet avec:
 ✅ **Système d'authentification** (Login/Register)
-✅ **Tableau de bord administrateur** 
+✅ **Tableau de bord administrateur**
 ✅ **Formulaire pour ajouter des articles** (Admin)
 ✅ **Système de catégories** (7 catégories)
 ✅ **Listing des produits** avec filtrage par catégorie
@@ -17,6 +17,18 @@ Un site e-commerce complet avec:
 ✅ **Tout en français**
 
 ---
+
+## 🗄️ Base de données Supabase
+
+Le site possède maintenant un schéma PostgreSQL prêt pour Supabase dans [`supabase/schema.sql`](supabase/schema.sql). Il couvre les utilisateurs, produits, commandes, lignes de commande, messages, vidéos, vues, likes, favoris, panier, réglages et notifications.
+
+1. Créez un projet sur [Supabase](https://supabase.com/).
+2. Ouvrez **SQL Editor**, collez le contenu de `supabase/schema.sql`, puis exécutez-le.
+3. Dans **Authentication > Users**, créez le compte administrateur avec l’adresse `admin@bgshop.com`.
+4. Dans **Table Editor > profiles**, remplacez le rôle de ce compte par `admin`.
+5. Récupérez l’URL du projet et la clé publique dans **Project Settings > API** pour connecter les pages à Supabase.
+
+Le schéma active la sécurité RLS : les produits et vidéos sont consultables publiquement, tandis que les commandes, messages, paniers et réglages restent limités à leur propriétaire ou à un administrateur. Le site fonctionne encore en mode local tant que la couche JavaScript Supabase n’est pas branchée aux pages.
 
 ## 🏃 Démarrage Immédiat
 
@@ -98,7 +110,7 @@ Connexion → Admin → Ajouter Article → Gérer Articles → Gérer Commandes
 
 ### Authentification Requise Pour:
 - ✓ Appeler le support
-- ✓ Contacter via WhatsApp  
+- ✓ Contacter via WhatsApp
 - ✓ Passer une commande
 
 ### Admin Peut:

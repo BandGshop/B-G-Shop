@@ -30,6 +30,16 @@ Le site possède maintenant un schéma PostgreSQL prêt pour Supabase dans [`sup
 
 Le schéma active la sécurité RLS : les produits et vidéos sont consultables publiquement, tandis que les commandes, messages, paniers et réglages restent limités à leur propriétaire ou à un administrateur. Le site fonctionne encore en mode local tant que la couche JavaScript Supabase n’est pas branchée aux pages.
 
+### Connecter le site
+
+Dans [js/supabase-client.js](js/supabase-client.js), remplacez `YOUR_PROJECT_REF` par l’identifiant de votre projet et `YOUR_SUPABASE_ANON_KEY` par la clé **anon public** copiée dans **Project Settings > API**. Ne mettez jamais la clé `service_role` dans ce fichier.
+
+Le site chargera alors les produits depuis Supabase et utilisera Supabase Auth pour les connexions et inscriptions. Les fonctions non encore migrées gardent leur stockage local de secours jusqu’à leur remplacement par les tables correspondantes.
+
+### QR code du site
+
+Le QR code du site est disponible dans [images/bgshop-qr.png](images/bgshop-qr.png). Il ouvre directement : `https://bandgshop.github.io/B-G-Shop/`.
+
 ## 🏃 Démarrage Immédiat
 
 ### Pour les Utilisateurs Visiteurs

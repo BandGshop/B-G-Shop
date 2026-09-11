@@ -4,6 +4,25 @@ const app = {
   init() {
     this.ensureDefaultData();
     this.checkAuth();
+    this.syncProductsFromSupabase();
+  },
+
+  async syncProductsFromSupabase() {
+    const client = window.bgSupabase?.getClient();
+    if (!client) return;
+    const { data, error } = await client
+      .from('products')
+      .select('*')
+      .order('created_at', { ascending: false });
+    if (error || !data) {
+      console.warn('Supabase produits indisponibles, mode local conservé.', error?.message);
+      return;
+    }
+    localStorage.setItem('bgshop_products', JSON.stringify(data.map((product) => ({
+      ...product,
+      postedDate: product.created_at
+    }))));
+    window.dispatchEvent(new CustomEvent('bgshop-products-synced'));
   },
 
   // Ensure default data exists in localStorage
@@ -115,7 +134,16 @@ const app = {
     return user ? JSON.parse(user) : null;
   },
 
-  login(email, password) {
+  async login(email, password) {
+    const client = window.bgSupabase?.getClient();
+    if (client) {
+      const { data, error } = await client.auth.signInWithPassword({ email, password });
+      if (error) return { success: false, message: error.message };
+      const { data: profile } = await client.from('profiles').select('*').eq('id', data.user.id).single();
+      const user = profile || { id: data.user.id, email: data.user.email, name: email.split('@')[0], role: 'user' };
+      localStorage.setItem('bgshop_currentUser', JSON.stringify(user));
+      return { success: true, user };
+    }
     const users = JSON.parse(localStorage.getItem('bgshop_users'));
     const user = users.find(u => u.email === email && u.password === password);
     if (user) {
@@ -125,7 +153,21 @@ const app = {
     return { success: false, message: 'Email ou mot de passe incorrect' };
   },
 
-  register(email, password, name, profileImage = '') {
+  async register(email, password, name, profileImage = '') {
+    const client = window.bgSupabase?.getClient();
+    if (client) {
+      const { data, error } = await client.auth.signUp({
+        email,
+        password,
+        options: { data: { name, profile_image: profileImage } }
+      });
+      if (error) return { success: false, message: error.message };
+      if (!data.user) return { success: false, message: 'Vérifiez votre adresse email pour activer le compte.' };
+      const { data: profile } = await client.from('profiles').select('*').eq('id', data.user.id).single();
+      const user = profile || { id: data.user.id, email, name, profileImage, role: 'user' };
+      localStorage.setItem('bgshop_currentUser', JSON.stringify(user));
+      return { success: true, user };
+    }
     const users = JSON.parse(localStorage.getItem('bgshop_users'));
     if (users.find(u => u.email === email)) {
       return { success: false, message: 'Email déjà utilisé' };
@@ -249,7 +291,33 @@ const app = {
     product.postedDate = new Date().toISOString();
     products.push(product);
     localStorage.setItem('bgshop_products', JSON.stringify(products));
+    const client = window.bgSupabase?.getClient();
+    const user = this.checkAuth();
+    if (client) {
+      client.from('products').insert({
+        seller_id: user?.id || null,
+        title: product.title,
+        category: product.category,
+        price: product.price,
+        image: product.image,
+        description: product.description,
+        trending: Boolean(product.trending)
+      }).then(({ error }) => {
+        if (error) console.error('Impossible d’enregistrer le produit dans Supabase.', error);
+      });
+    }
     return product;
+  },
+
+  deleteProduct(productId) {
+    const products = this.getProducts().filter((product) => product.id !== productId);
+    localStorage.setItem('bgshop_products', JSON.stringify(products));
+    const client = window.bgSupabase?.getClient();
+    if (client) {
+      client.from('products').delete().eq('id', productId).then(({ error }) => {
+        if (error) console.error('Impossible de supprimer le produit dans Supabase.', error);
+      });
+    }
   },
 
   getCategories() {
@@ -270,6 +338,27 @@ const app = {
     order.createdDate = new Date().toISOString();
     orders.push(order);
     localStorage.setItem('bgshop_orders', JSON.stringify(orders));
+    const client = window.bgSupabase?.getClient();
+    if (client && /^[0-9a-f-]{36}$/i.test(String(order.userId || ''))) {
+      client.from('orders').insert({
+        customer_id: order.userId,
+        customer_name: order.customerName,
+        customer_phone: order.customerPhone,
+        customer_address: order.customerAddress
+      }).select('id').single().then(({ data, error }) => {
+        if (error) {
+          console.error('Impossible d’enregistrer la commande dans Supabase.', error);
+          return;
+        }
+        return client.from('order_items').insert({
+          order_id: data.id,
+          product_id: order.productId,
+          product_title: order.productTitle,
+          product_price: order.productPrice,
+          quantity: 1
+        });
+      });
+    }
     return order;
   },
 

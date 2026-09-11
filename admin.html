@@ -597,6 +597,8 @@
             </div>
         </div>
 
+        <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+        <script src="js/supabase-client.js"></script>
         <script src="js/app.js"></script>
         <script>
                         // Check if user is admin. If not, show a styled access message in admin content area.
@@ -767,8 +769,7 @@
 
             function deleteProduct(productId) {
                 if (confirm("Êtes-vous sûr de vouloir supprimer cet article?")) {
-                    const products = app.getProducts().filter((p) => p.id !== productId);
-                    localStorage.setItem("bgshop_products", JSON.stringify(products));
+                    app.deleteProduct(productId);
                     loadProductsList();
                     loadDashboard();
                 }

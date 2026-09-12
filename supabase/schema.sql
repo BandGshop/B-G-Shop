@@ -300,10 +300,3 @@ for insert to authenticated with check (bucket_id = 'videos');
 create policy video_storage_delete_admin on storage.objects
 for delete to authenticated using (bucket_id = 'videos' and public.is_admin());
 
-insert into public.products (title, category, price, image, description, trending)
-values
-  ('iPhone 15 Pro', 'Électronique', 1200, 'https://via.placeholder.com/400?text=iPhone+15+Pro', 'Dernier modèle Apple avec appareil photo premium', true),
-  ('Chien Golden Retriever', 'Animaux', 450, 'https://via.placeholder.com/400?text=Golden+Retriever', 'Chiot Golden Retriever enregistré et vacciné', true),
-  ('Robe de Soirée Noire', 'Vêtements', 85, 'https://via.placeholder.com/400?text=Robe+Noire', 'Robe élégante en soie pour soirée spéciale', true),
-  ('Montre Rolex Submariner', 'Accessoires de beauté', 8000, 'https://via.placeholder.com/400?text=Rolex+Watch', 'Montre de luxe authentique', true),
-  ('Toyota Corolla Location', 'Voitures', 50, 'https://via.placeholder.com/400?text=Toyota+Corolla', 'Location quotidienne de voiture', false);

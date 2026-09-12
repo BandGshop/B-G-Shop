@@ -124,67 +124,20 @@ const app = {
       ]));
     }
 
-    if (!localStorage.getItem('bgshop_products')) {
-      const sampleProducts = [
-        {
-          id: 1,
-          title: 'iPhone 15 Pro',
-          category: 'Électronique',
-          price: 1200,
-          image: 'https://via.placeholder.com/400?text=iPhone+15+Pro',
-          description: 'Dernier modèle Apple avec appareil photo premium',
-          trending: true,
-          postedDate: new Date().toISOString()
-        },
-        {
-          id: 2,
-          title: 'Chien Golden Retriever',
-          category: 'Animaux',
-          price: 450,
-          image: 'https://via.placeholder.com/400?text=Golden+Retriever',
-          description: 'Chiot Golden Retriever enregistré et vacciné',
-          trending: true,
-          postedDate: new Date().toISOString()
-        },
-        {
-          id: 3,
-          title: 'Robe de Soirée Noire',
-          category: 'Vêtements',
-          price: 85,
-          image: 'https://via.placeholder.com/400?text=Robe+Noire',
-          description: 'Robe élégante en soie pour soirée spéciale',
-          trending: true,
-          postedDate: new Date().toISOString()
-        },
-        {
-          id: 4,
-          title: 'Montre Rolex Submariner',
-          category: 'Cosmétiques',
-          price: 8000,
-          image: 'https://via.placeholder.com/400?text=Rolex+Watch',
-          description: 'Montre de luxe authentique',
-          trending: true,
-          postedDate: new Date().toISOString()
-        },
-        {
-          id: 5,
-          title: 'Toyota Corolla Location',
-          category: 'Voitures',
-          price: 50,
-          image: 'https://via.placeholder.com/400?text=Toyota+Corolla',
-          description: 'Location quotidienne de voiture',
-          trending: false,
-          postedDate: new Date().toISOString()
-        }
-      ];
-      localStorage.setItem('bgshop_products', JSON.stringify(sampleProducts));
-    } else {
+    if (localStorage.getItem('bgshop_products')) {
       const products = JSON.parse(localStorage.getItem('bgshop_products'));
+      const demoProductTitles = new Set([
+        'iPhone 15 Pro',
+        'Chien Golden Retriever',
+        'Robe de Soirée Noire',
+        'Montre Rolex Submariner',
+        'Toyota Corolla Location'
+      ]);
       const legacyCategoryNames = {
         fashion: 'Vêtements',
         Fashion: 'Vêtements'
       };
-      const normalizedProducts = products.map((product) => ({
+      const normalizedProducts = products.filter((product) => !demoProductTitles.has(product.title)).map((product) => ({
         ...product,
         category: legacyCategoryNames[product.category] || product.category,
         views: Array.isArray(product.views) ? product.views : []

@@ -425,15 +425,24 @@ const app = {
     return product;
   },
 
-  deleteProduct(productId) {
-    const products = this.getProducts().filter((product) => product.id !== productId);
-    localStorage.setItem('bgshop_products', JSON.stringify(products));
+  async deleteProduct(productId) {
     const client = window.bgSupabase?.getClient();
     if (client) {
-      client.from('products').delete().eq('id', productId).then(({ error }) => {
-        if (error) console.error('Impossible de supprimer le produit dans Supabase.', error);
-      });
+      const { data, error } = await client
+        .from('products')
+        .delete()
+        .eq('id', productId)
+        .select('id');
+      if (error) {
+        throw new Error(`Suppression refusée par Supabase : ${error.message}`);
+      }
+      if (!data?.length) {
+        throw new Error('Le produit est introuvable ou votre compte admin n’est pas autorisé à le supprimer.');
+      }
     }
+    const products = this.getProducts().filter((product) => product.id !== productId);
+    localStorage.setItem('bgshop_products', JSON.stringify(products));
+    return true;
   },
 
   getCategories() {

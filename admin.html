@@ -767,11 +767,15 @@
                 .join("");
             }
 
-            function deleteProduct(productId) {
+            async function deleteProduct(productId) {
                 if (confirm("Êtes-vous sûr de vouloir supprimer cet article?")) {
-                    app.deleteProduct(productId);
-                    loadProductsList();
-                    loadDashboard();
+                    try {
+                        await app.deleteProduct(productId);
+                        loadProductsList();
+                        loadDashboard();
+                    } catch (error) {
+                        alert(error.message || "Impossible de supprimer l'article.");
+                    }
                 }
             }
 

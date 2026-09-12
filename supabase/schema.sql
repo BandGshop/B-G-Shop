@@ -299,4 +299,3 @@ create policy video_storage_upload_authenticated on storage.objects
 for insert to authenticated with check (bucket_id = 'videos');
 create policy video_storage_delete_admin on storage.objects
 for delete to authenticated using (bucket_id = 'videos' and public.is_admin());
-

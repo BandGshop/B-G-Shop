@@ -4,7 +4,7 @@ const app = {
   init() {
     this.ensureDefaultData();
     this.checkAuth();
-    this.hydrateFromSupabase();
+    return this.hydrateFromSupabase();
   },
 
   async hydrateFromSupabase() {
@@ -106,7 +106,7 @@ const app = {
       .select('*')
       .order('created_at', { ascending: false });
     if (error || !data) {
-      console.warn('Supabase produits indisponibles, mode local conservé.', error?.message);
+      console.error('Supabase produits indisponibles.', error?.message);
       return;
     }
     localStorage.setItem('bgshop_products', JSON.stringify(data.map((product) => ({

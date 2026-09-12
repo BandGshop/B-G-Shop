@@ -906,16 +906,24 @@
                 }
             }
 
-            function deleteVideo(videoId) {
+            async function deleteVideo(videoId) {
                 if (!confirm("Supprimer cette vidéo ?")) {
                     return;
                 }
-                const videos = app.getVideos().filter((video) => video.id !== videoId);
-                localStorage.setItem("bgshop_videos", JSON.stringify(videos));
                 const client = window.bgSupabase?.getClient();
-                if (client) client.from('videos').delete().eq('id', videoId);
-                loadVideoManagement();
-                loadDashboard();
+                try {
+                    if (client) {
+                        const { data, error } = await client.from('videos').delete().eq('id', videoId).select('id');
+                        if (error) throw error;
+                        if (!data?.length) throw new Error('La vidéo est introuvable ou votre compte admin n’est pas autorisé.');
+                    }
+                    const videos = app.getVideos().filter((video) => video.id !== videoId);
+                    localStorage.setItem("bgshop_videos", JSON.stringify(videos));
+                    loadVideoManagement();
+                    loadDashboard();
+                } catch (error) {
+                    alert(error.message || "Impossible de supprimer la vidéo.");
+                }
             }
 
             function resetVideoForm() {
@@ -936,10 +944,9 @@
             }
 
             // Initialize app data and then check admin access
-            app.init();
-            if (checkAdminAccess()) {
-                loadDashboard();
-            }
+            app.init().then(() => {
+                if (checkAdminAccess()) loadDashboard();
+            });
         </script>
     </body>
 </html>

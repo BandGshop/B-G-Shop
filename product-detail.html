@@ -446,7 +446,7 @@
                 button.textContent = key === 'liked' ? '👍 J’aime' : (active ? '♥ Ajouté aux favoris' : '♡ Ajouter aux favoris');
             }
 
-            function submitOrder(e) {
+            async function submitOrder(e) {
                 e.preventDefault();
 
                 const user = app.checkAuth();
@@ -468,7 +468,12 @@
                     userEmail: user.email,
                 };
 
-                app.addOrder(order);
+                try {
+                    await app.addOrder(order);
+                } catch (error) {
+                    alert(error.message || "Impossible d'envoyer la commande.");
+                    return;
+                }
 
                 alert(
                     "✓ Commande envoyée avec succès!\n\nLes administrateurs préparent votre commande et vous enverront une confirmation avec la date de livraison."

@@ -379,20 +379,25 @@
                 document.getElementById("order-modal").classList.remove("open");
             }
 
-            function submitOrder(event) {
+            async function submitOrder(event) {
                 event.preventDefault();
                 const user = requireUser();
                 if (!user || !selectedVideo) return;
-                app.addOrder({
-                    customerName: document.getElementById("order-name").value.trim(),
-                    customerPhone: document.getElementById("order-phone").value.trim(),
-                    customerAddress: document.getElementById("order-address").value.trim(),
-                    videoId: selectedVideo.id,
-                    productTitle: selectedVideo.title,
-                    productPrice: selectedVideo.price || null,
-                    userId: user.id,
-                    userEmail: user.email,
-                });
+                try {
+                    await app.addOrder({
+                        customerName: document.getElementById("order-name").value.trim(),
+                        customerPhone: document.getElementById("order-phone").value.trim(),
+                        customerAddress: document.getElementById("order-address").value.trim(),
+                        videoId: selectedVideo.id,
+                        productTitle: selectedVideo.title,
+                        productPrice: selectedVideo.price || 0,
+                        userId: user.id,
+                        userEmail: user.email,
+                    });
+                } catch (error) {
+                    alert(error.message || "Impossible d'envoyer la commande.");
+                    return;
+                }
                 alert("Commande envoyée avec succès !");
                 document.getElementById("order-form").reset();
                 closeOrderModal();

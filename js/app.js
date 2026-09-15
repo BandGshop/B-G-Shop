@@ -37,29 +37,39 @@ const app = {
       productPrice: order.order_items?.[0]?.product_price
     }))));
 
-    const { data: messages } = await client.from('messages').select('*').order('created_at', { ascending: true });
+    const [{ data: messages }, { data: profiles }] = await Promise.all([
+      client.from('messages').select('*').order('created_at', { ascending: true }),
+      client.from('profiles').select('id, email, name, role')
+    ]);
     if (messages) localStorage.setItem('bgshop_messages', JSON.stringify(messages.map((message) => ({
       id: message.id,
       userId: message.user_id,
-      userEmail: message.user_id,
-      sender: message.sender_id,
-      receiver: message.receiver_role === 'admin' ? 'admin' : message.user_id,
+      userEmail: profiles?.find((profile) => profile.id === message.user_id)?.email || message.user_id,
+      sender: profiles?.find((profile) => profile.id === message.sender_id)?.role === 'admin'
+        ? 'admin'
+        : profiles?.find((profile) => profile.id === message.sender_id)?.email || message.sender_id,
+      receiver: message.receiver_role === 'admin' ? 'admin' : profiles?.find((profile) => profile.id === message.user_id)?.email || message.user_id,
       text: message.text,
       isReadByAdmin: message.is_read_by_admin,
       isReadByUser: message.is_read_by_user,
       createdDate: message.created_at
     }))));
 
-    const { data: videos } = await client.from('videos').select('*').order('created_at', { ascending: false });
+    const [{ data: videos }, { data: adLinks }] = await Promise.all([
+      client.from('videos').select('*').order('created_at', { ascending: false }),
+      client.from('ad_videos').select('video_id, position').order('position', { ascending: true })
+    ]);
     if (videos) {
-      const videoIds = videos.map((video) => video.id);
+      const adVideoIds = new Set((adLinks || []).map((link) => link.video_id));
+      const contentVideos = videos.filter((video) => !adVideoIds.has(video.id));
+      const videoIds = contentVideos.map((video) => video.id);
       const [{ data: views }, { data: likes }, { data: comments }, { data: favorites }] = await Promise.all([
         client.from('video_views').select('*').in('video_id', videoIds),
         client.from('video_likes').select('*').in('video_id', videoIds),
         client.from('video_comments').select('*').in('video_id', videoIds),
         client.from('video_favorites').select('*').in('video_id', videoIds)
       ]);
-      localStorage.setItem('bgshop_videos', JSON.stringify(videos.map((video) => ({
+      localStorage.setItem('bgshop_videos', JSON.stringify(contentVideos.map((video) => ({
         id: video.id,
         title: video.title,
         description: video.description,
@@ -69,6 +79,17 @@ const app = {
         likes: (likes || []).filter((item) => item.video_id === video.id).map((item) => ({ userId: item.user_id, date: item.created_at })),
         comments: (comments || []).filter((item) => item.video_id === video.id).map((item) => ({ id: item.id, userId: item.user_id, text: item.text, date: item.created_at }))
       }))));
+      localStorage.setItem('bgshop_ad_videos', JSON.stringify((adLinks || []).map((link) => {
+        const video = videos.find((item) => item.id === link.video_id);
+        return video ? {
+          id: video.id,
+          title: video.title,
+          description: video.description,
+          videoUrl: video.video_url,
+          postedDate: video.created_at,
+          position: link.position
+        } : null;
+      }).filter(Boolean)));
       localStorage.setItem('bgshop_favorites_remote', JSON.stringify(favorites || []));
     }
 
@@ -101,17 +122,24 @@ const app = {
   async syncProductsFromSupabase() {
     const client = window.bgSupabase?.getClient();
     if (!client) return;
-    const { data, error } = await client
+    const [{ data, error }, { data: productViews }] = await Promise.all([
+      client
       .from('products')
       .select('*')
-      .order('created_at', { ascending: false });
+      .order('created_at', { ascending: false }),
+      client.from('product_views').select('product_id, user_id, created_at')
+    ]);
     if (error || !data) {
       console.error('Supabase produits indisponibles.', error?.message);
       return;
     }
     localStorage.setItem('bgshop_products', JSON.stringify(data.map((product) => ({
       ...product,
-      postedDate: product.created_at
+      postedDate: product.created_at,
+      views: (productViews || []).filter((view) => view.product_id === product.id).map((view) => ({
+        userId: view.user_id,
+        date: view.created_at
+      }))
     }))));
     window.dispatchEvent(new CustomEvent('bgshop-products-synced'));
   },
@@ -260,7 +288,7 @@ const app = {
     return this.getProducts().find(p => p.id === id);
   },
 
-  recordProductView(productId, user) {
+  async recordProductView(productId, user) {
     if (!user) return null;
     const products = this.getProducts();
     const product = products.find((item) => item.id === productId);
@@ -273,6 +301,11 @@ const app = {
         date: new Date().toISOString()
       });
       localStorage.setItem('bgshop_products', JSON.stringify(products));
+      const client = window.bgSupabase?.getClient();
+      if (client && user?.id) {
+        const { error } = await client.from('product_views').upsert({ product_id: productId, user_id: user.id });
+        if (error) console.error('Impossible d’enregistrer la vue de l’article.', error);
+      }
     }
     return product;
   },
@@ -309,18 +342,21 @@ const app = {
     return { ...defaults, ...(JSON.parse(localStorage.getItem(`bgshop_settings_${userEmail}`) || '{}')) };
   },
 
-  saveUserSettings(userEmail, settings) {
+  async saveUserSettings(userEmail, settings) {
     if (!userEmail) return;
     localStorage.setItem(`bgshop_settings_${userEmail}`, JSON.stringify(settings));
     this.applyUserSettings(settings);
     const user = this.checkAuth();
     const client = window.bgSupabase?.getClient();
-    if (client && user?.id) client.from('user_settings').upsert({
-      user_id: user.id,
-      language: settings.language,
-      site_background: settings.siteBackground,
-      message_background: settings.messageBackground
-    });
+    if (client && user?.id) {
+      const { error } = await client.from('user_settings').upsert({
+        user_id: user.id,
+        language: settings.language,
+        site_background: settings.siteBackground,
+        message_background: settings.messageBackground
+      });
+      if (error) throw new Error(`Impossible d’enregistrer les préférences : ${error.message}`);
+    }
   },
 
   applyUserSettings(settings) {
@@ -417,34 +453,41 @@ const app = {
   },
 
   // Order management
-  addOrder(order) {
+  async addOrder(order) {
     const orders = JSON.parse(localStorage.getItem('bgshop_orders'));
-    order.id = Math.max(...orders.map(o => o.id || 0), 0) + 1;
     order.status = 'pending';
     order.createdDate = new Date().toISOString();
-    orders.push(order);
-    localStorage.setItem('bgshop_orders', JSON.stringify(orders));
     const client = window.bgSupabase?.getClient();
-    if (client && /^[0-9a-f-]{36}$/i.test(String(order.userId || ''))) {
-      client.from('orders').insert({
+    if (client) {
+      if (!/^[0-9a-f-]{36}$/i.test(String(order.userId || ''))) {
+        throw new Error('Vous devez être connecté pour passer une commande.');
+      }
+      const { data, error } = await client.from('orders').insert({
         customer_id: order.userId,
         customer_name: order.customerName,
         customer_phone: order.customerPhone,
         customer_address: order.customerAddress
-      }).select('id').single().then(({ data, error }) => {
-        if (error) {
-          console.error('Impossible d’enregistrer la commande dans Supabase.', error);
-          return;
-        }
-        return client.from('order_items').insert({
-          order_id: data.id,
-          product_id: order.productId,
-          product_title: order.productTitle,
-          product_price: order.productPrice,
-          quantity: 1
-        });
+      }).select('id, created_at').single();
+      if (error) throw new Error(`Impossible d’enregistrer la commande : ${error.message}`);
+      const { error: itemError } = await client.from('order_items').insert({
+        order_id: data.id,
+        product_id: order.productId || null,
+        product_title: order.productTitle,
+        product_price: order.productPrice || 0,
+        quantity: 1
       });
+      if (itemError) {
+        await client.from('orders').delete().eq('id', data.id);
+        throw new Error(`Impossible d’enregistrer l’article commandé : ${itemError.message}`);
+      }
+      order.id = data.id;
+      order.createdDate = data.created_at;
+    } else {
+      order.id = Math.max(...orders.map(o => o.id || 0), 0) + 1;
     }
+
+    orders.push(order);
+    localStorage.setItem('bgshop_orders', JSON.stringify(orders));
     return order;
   },
 
@@ -460,20 +503,53 @@ const app = {
     return this.getAdVideos().map((video) => video.id);
   },
 
-  setAdVideoIds(videoIds) {
+  async setAdVideoIds(videoIds) {
     const selectedIds = new Set(videoIds);
     const ads = this.getAdVideos().filter((video) => selectedIds.has(video.id));
     localStorage.setItem('bgshop_ad_videos', JSON.stringify(ads));
+    const client = window.bgSupabase?.getClient();
+    const user = this.checkAuth();
+    if (client && user?.role === 'admin') {
+      const { error: deleteError } = await client.from('ad_videos').delete().gte('position', 0);
+      if (deleteError) throw new Error(`Impossible de mettre à jour la publicité : ${deleteError.message}`);
+      if (videoIds.length) {
+        const { error } = await client.from('ad_videos').insert(videoIds.map((videoId, index) => ({ video_id: videoId, position: index })));
+        if (error) throw new Error(`Impossible de sélectionner les publicités : ${error.message}`);
+      }
+    }
   },
 
   getAdVideos() {
     return JSON.parse(localStorage.getItem('bgshop_ad_videos') || '[]');
   },
 
-  addAdVideo(video) {
+  async addAdVideo(video) {
     const ads = this.getAdVideos();
-    video.id = Math.max(...ads.map((ad) => ad.id || 0), 0) + 1;
-    video.postedDate = new Date().toISOString();
+    const client = window.bgSupabase?.getClient();
+    const user = this.checkAuth();
+    if (client) {
+      if (!user?.id || user.role !== 'admin') throw new Error('Seul un administrateur peut publier une publicité.');
+      const blob = await fetch(video.videoUrl).then((response) => response.blob());
+      const path = `${user.id}/ads-${Date.now()}-${(video.originalName || 'video.webm').replace(/[^a-z0-9._-]/gi, '_')}`;
+      const { error: uploadError } = await client.storage.from('videos').upload(path, blob, { contentType: blob.type, upsert: false });
+      if (uploadError) throw new Error(`Impossible de charger la publicité : ${uploadError.message}`);
+      const videoUrl = client.storage.from('videos').getPublicUrl(path).data.publicUrl;
+      const { data, error } = await client.from('videos').insert({
+        author_id: user.id,
+        title: video.title,
+        description: video.description,
+        video_url: videoUrl
+      }).select('id, created_at, video_url').single();
+      if (error) throw new Error(`Impossible d’enregistrer la publicité : ${error.message}`);
+      const { error: adError } = await client.from('ad_videos').insert({ video_id: data.id, position: ads.length });
+      if (adError) throw new Error(`Impossible d’activer la publicité : ${adError.message}`);
+      video.id = data.id;
+      video.postedDate = data.created_at;
+      video.videoUrl = data.video_url;
+    } else {
+      video.id = Math.max(...ads.map((ad) => ad.id || 0), 0) + 1;
+      video.postedDate = new Date().toISOString();
+    }
     ads.push(video);
     localStorage.setItem('bgshop_ad_videos', JSON.stringify(ads));
     return video;
@@ -511,36 +587,40 @@ const app = {
     return favorites.includes(videoId);
   },
 
-  addVideo(video) {
+  async addVideo(video) {
     const videos = this.getVideos();
-    video.id = Math.max(...videos.map((v) => v.id || 0), 0) + 1;
-    video.postedDate = new Date().toISOString();
     video.views = [];
     video.likes = [];
     video.comments = [];
-    videos.push(video);
-    localStorage.setItem('bgshop_videos', JSON.stringify(videos));
     const client = window.bgSupabase?.getClient();
     const user = this.checkAuth();
-    if (client && user?.id) {
-      (async () => {
-        let videoUrl = video.videoUrl;
-        if (videoUrl?.startsWith('data:')) {
-          const blob = await fetch(videoUrl).then((response) => response.blob());
-          const path = `${user.id}/${Date.now()}-${(video.originalName || 'video.webm').replace(/[^a-z0-9._-]/gi, '_')}`;
-          const { error: uploadError } = await client.storage.from('videos').upload(path, blob, { contentType: blob.type, upsert: false });
-          if (uploadError) throw uploadError;
-          videoUrl = client.storage.from('videos').getPublicUrl(path).data.publicUrl;
-        }
-        const { error } = await client.from('videos').insert({
-          author_id: user.id,
-          title: video.title,
-          description: video.description,
-          video_url: videoUrl
-        });
-        if (error) console.error('Vidéo non enregistrée dans Supabase.', error);
-      })().catch((error) => console.error('Upload vidéo Supabase impossible.', error));
+    if (client) {
+      if (!user?.id) throw new Error('Vous devez être connecté pour publier une vidéo.');
+      let videoUrl = video.videoUrl;
+      if (videoUrl?.startsWith('data:')) {
+        const blob = await fetch(videoUrl).then((response) => response.blob());
+        const path = `${user.id}/${Date.now()}-${(video.originalName || 'video.webm').replace(/[^a-z0-9._-]/gi, '_')}`;
+        const { error: uploadError } = await client.storage.from('videos').upload(path, blob, { contentType: blob.type, upsert: false });
+        if (uploadError) throw new Error(`Impossible de charger la vidéo : ${uploadError.message}`);
+        videoUrl = client.storage.from('videos').getPublicUrl(path).data.publicUrl;
+      }
+      const { data, error } = await client.from('videos').insert({
+        author_id: user.id,
+        title: video.title,
+        description: video.description,
+        video_url: videoUrl
+      }).select('*').single();
+      if (error) throw new Error(`Impossible d’enregistrer la vidéo : ${error.message}`);
+      video.id = data.id;
+      video.postedDate = data.created_at;
+      video.videoUrl = data.video_url;
+    } else {
+      video.id = Math.max(...videos.map((v) => v.id || 0), 0) + 1;
+      video.postedDate = new Date().toISOString();
     }
+
+    videos.push(video);
+    localStorage.setItem('bgshop_videos', JSON.stringify(videos));
     return video;
   },
 
@@ -709,22 +789,39 @@ const app = {
     return users.find((u) => u.email === email);
   },
 
-  addMessage(message) {
+  async addMessage(message) {
     const messages = JSON.parse(localStorage.getItem('bgshop_messages'));
-    message.id = Math.max(...messages.map((m) => m.id || 0), 0) + 1;
     message.createdDate = new Date().toISOString();
     message.isReadByAdmin = message.receiver === 'admin' ? false : true;
     message.isReadByUser = message.receiver === 'admin' ? true : false;
-    messages.push(message);
-    localStorage.setItem('bgshop_messages', JSON.stringify(messages));
     const user = this.checkAuth();
     const client = window.bgSupabase?.getClient();
-    if (client && user?.id) client.from('messages').insert({
-      user_id: user.id,
-      sender_id: user.id,
-      receiver_role: message.receiver === 'admin' ? 'admin' : 'user',
-      text: message.text
-    });
+    if (client) {
+      if (!user?.id) throw new Error('Vous devez être connecté pour envoyer un message.');
+      let threadUserId = user.id;
+      if (user.role === 'admin' && message.userEmail) {
+        const { data: threadUser, error: profileError } = await client
+          .from('profiles')
+          .select('id')
+          .eq('email', message.userEmail)
+          .single();
+        if (profileError) throw new Error(`Destinataire introuvable : ${profileError.message}`);
+        threadUserId = threadUser.id;
+      }
+      const { data, error } = await client.from('messages').insert({
+        user_id: threadUserId,
+        sender_id: user.id,
+        receiver_role: message.receiver === 'admin' ? 'admin' : 'user',
+        text: message.text
+      }).select('id, created_at').single();
+      if (error) throw new Error(`Impossible d’envoyer le message : ${error.message}`);
+      message.id = data.id;
+      message.createdDate = data.created_at;
+    } else {
+      message.id = Math.max(...messages.map((m) => m.id || 0), 0) + 1;
+    }
+    messages.push(message);
+    localStorage.setItem('bgshop_messages', JSON.stringify(messages));
     return message;
   },
 
@@ -762,7 +859,11 @@ const app = {
     });
     localStorage.setItem('bgshop_messages', JSON.stringify(messages));
     const client = window.bgSupabase?.getClient();
-    if (client) client.from('messages').update({ is_read_by_admin: true }).eq('user_id', userEmail).eq('receiver_role', 'admin');
+    if (client) {
+      client.from('profiles').select('id').eq('email', userEmail).single().then(({ data }) => {
+        if (data) client.from('messages').update({ is_read_by_admin: true }).eq('user_id', data.id).eq('receiver_role', 'admin');
+      });
+    }
   },
 
   markThreadReadByUser(userEmail) {
@@ -786,32 +887,43 @@ const app = {
     return JSON.parse(localStorage.getItem('bgshop_notifications') || '[]');
   },
 
-  addNotification(notification) {
+  async addNotification(notification) {
     const notifications = this.getNotifications();
-    notifications.unshift({ ...notification, id: Date.now(), createdDate: new Date().toISOString() });
-    localStorage.setItem('bgshop_notifications', JSON.stringify(notifications));
     const client = window.bgSupabase?.getClient();
     const user = this.checkAuth();
-    if (client && user?.id) client.from('notifications').insert({ title: notification.title, text: notification.text, created_by: user.id });
+    const localNotification = { ...notification, id: Date.now(), createdDate: new Date().toISOString() };
+    if (client) {
+      if (!user?.id || user.role !== 'admin') throw new Error('Seul un administrateur peut envoyer une notification.');
+      const { data, error } = await client.from('notifications').insert({ title: notification.title, text: notification.text, created_by: user.id }).select('id, created_at').single();
+      if (error) throw new Error(`Impossible d’envoyer la notification : ${error.message}`);
+      localNotification.id = data.id;
+      localNotification.createdDate = data.created_at;
+    }
+    notifications.unshift(localNotification);
+    localStorage.setItem('bgshop_notifications', JSON.stringify(notifications));
+    return localNotification;
   },
 
-  updateOrderStatus(orderId, status) {
+  async updateOrderStatus(orderId, status) {
     const orders = this.getOrders();
     const order = orders.find((item) => item.id === orderId);
     if (!order) return;
-    order.status = status;
-    localStorage.setItem('bgshop_orders', JSON.stringify(orders));
-    const client = window.bgSupabase?.getClient();
-    if (client) client.from('orders').update({ status }).eq('id', orderId);
-  },
-
-  changeAdminPassword(email, currentPassword, newPassword) {
     const client = window.bgSupabase?.getClient();
     if (client) {
-      client.auth.signInWithPassword({ email, password: currentPassword }).then(({ error }) => {
-        if (!error) client.auth.updateUser({ password: newPassword });
-      });
-      return true;
+      const { error } = await client.from('orders').update({ status }).eq('id', orderId);
+      if (error) throw new Error(`Impossible de mettre à jour la commande : ${error.message}`);
+    }
+    order.status = status;
+    localStorage.setItem('bgshop_orders', JSON.stringify(orders));
+  },
+
+  async changeAdminPassword(email, currentPassword, newPassword) {
+    const client = window.bgSupabase?.getClient();
+    if (client) {
+      const { error: loginError } = await client.auth.signInWithPassword({ email, password: currentPassword });
+      if (loginError) return false;
+      const { error } = await client.auth.updateUser({ password: newPassword });
+      return !error;
     }
     const users = JSON.parse(localStorage.getItem('bgshop_users'));
     const admin = users.find((user) => user.email === email && user.role === 'admin');

@@ -495,7 +495,7 @@
                 history.innerHTML = '<div class="empty-state">Aucune discussion sélectionnée.</div>';
             }
 
-            function handleMessageSubmit(event) {
+            async function handleMessageSubmit(event) {
                 event.preventDefault();
                 const input = document.getElementById("message-input");
                 const text = input.value.trim();
@@ -510,7 +510,12 @@
                     text,
                 };
 
-                app.addMessage(message);
+                try {
+                    await app.addMessage(message);
+                } catch (error) {
+                    alert(error.message || "Impossible d'envoyer le message.");
+                    return;
+                }
                 input.value = "";
 
                 if (currentUser.role === "admin") {

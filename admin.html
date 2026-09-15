@@ -334,6 +334,15 @@
                 margin-bottom: 1rem;
             }
 
+            .error-message {
+                padding: 1rem;
+                background: rgba(220, 53, 69, 0.12);
+                border: 1px solid rgba(220, 53, 69, 0.35);
+                border-radius: 8px;
+                color: #ff8f9b;
+                margin-bottom: 1rem;
+            }
+
             @media (max-width: 768px) {
                 .admin-container {
                     grid-template-columns: 1fr;
@@ -681,11 +690,20 @@
                     trending: document.getElementById("product-trending").checked,
                 };
 
-                app.addProduct(product);
+                try {
+                    await app.addProduct(product);
+                } catch (error) {
+                    const msg = document.getElementById("success-message");
+                    msg.textContent = error.message || "Impossible d'ajouter l'article.";
+                    msg.className = "error-message";
+                    msg.style.display = "block";
+                    return;
+                }
 
                 // Show success message
                 const msg = document.getElementById("success-message");
                 msg.textContent = "✓ Article ajouté avec succès!";
+                msg.className = "success-message";
                 msg.style.display = "block";
 
                 // Reset form

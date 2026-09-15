@@ -354,16 +354,15 @@ const app = {
     return ids.includes(productId);
   },
 
-  addProduct(product) {
+  async addProduct(product) {
     const products = this.getProducts();
-    product.id = Math.max(...products.map(p => p.id), 0) + 1;
-    product.postedDate = new Date().toISOString();
-    products.push(product);
-    localStorage.setItem('bgshop_products', JSON.stringify(products));
     const client = window.bgSupabase?.getClient();
     const user = this.checkAuth();
     if (client) {
-      client.from('products').insert({
+      if (!user?.id) {
+        throw new Error('Vous devez être connecté pour publier un article.');
+      }
+      const { data, error } = await client.from('products').insert({
         seller_id: user?.id || null,
         title: product.title,
         category: product.category,
@@ -371,10 +370,19 @@ const app = {
         image: product.image,
         description: product.description,
         trending: Boolean(product.trending)
-      }).then(({ error }) => {
-        if (error) console.error('Impossible d’enregistrer le produit dans Supabase.', error);
-      });
+      }).select('*').single();
+      if (error) {
+        throw new Error(`Impossible d’enregistrer l’article dans Supabase : ${error.message}`);
+      }
+      product.id = data.id;
+      product.postedDate = data.created_at;
+    } else {
+      product.id = Math.max(...products.map(p => p.id), 0) + 1;
+      product.postedDate = new Date().toISOString();
     }
+
+    products.push(product);
+    localStorage.setItem('bgshop_products', JSON.stringify(products));
     return product;
   },
 

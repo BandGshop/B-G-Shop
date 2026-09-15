@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="520" height="120" viewBox="0 0 520 120" role="img" aria-labelledby="title desc">
+  <title id="title">B&amp;G Shop</title>
+  <desc id="desc">Visuel de remplacement pour la barre publicitaire</desc>
+  <defs>
+    <linearGradient id="background" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#17101d"/>
+      <stop offset="0.58" stop-color="#29152a"/>
+      <stop offset="1" stop-color="#4a1c36"/>
+    </linearGradient>
+    <linearGradient id="gold" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#ffe79b"/>
+      <stop offset="0.5" stop-color="#ffd65d"/>
+      <stop offset="1" stop-color="#ffae3d"/>
+    </linearGradient>
+    <filter id="glow" x="-30%" y="-50%" width="160%" height="200%">
+      <feGaussianBlur stdDeviation="4" result="blur"/>
+      <feMerge>
+        <feMergeNode in="blur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+  <rect width="520" height="120" rx="12" fill="url(#background)"/>
+  <path d="M0 91 C105 54 156 118 260 82 S420 46 520 73" fill="none" stroke="#e84b91" stroke-opacity=".28" stroke-width="2"/>
+  <path d="M0 101 C105 64 156 128 260 92 S420 56 520 83" fill="none" stroke="#ffd65d" stroke-opacity=".2" stroke-width="1"/>
+  <circle cx="39" cy="31" r="6" fill="#ff65af" filter="url(#glow)"/>
+  <circle cx="478" cy="89" r="4" fill="#ffd65d" filter="url(#glow)"/>
+  <text x="260" y="75" text-anchor="middle" font-family="Georgia, 'Times New Roman', serif" font-size="58" font-weight="700" letter-spacing="1" fill="url(#gold)">B&amp;G Shop</text>
+  <rect x="176" y="91" width="168" height="2" rx="1" fill="#ff65af" opacity=".8"/>
+</svg>

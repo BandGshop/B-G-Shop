@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>B&G Shop | Trouvez ce qu'il vous faut</title>
+    <link rel="stylesheet" href="styles.css" />
+    <style>
+        .market-nav { justify-content: space-between; }
+        .market-brand { order: 4; margin-left: auto; }
+        .market-brand span { color: var(--ink); }
+        .market-links { order: 1; margin-left: 0; }
+        .market-links > a, .market-links .ad-bar { display: none; }
+        .market-links #auth-container { display: flex; }
+        .market-hero { position: relative; min-height: 430px; display: grid; place-items: center; overflow: hidden; background: #17282b; }
+        .market-hero-video, .market-hero-shade { position: absolute; inset: 0; width: 100%; height: 100%; }
+        .market-hero-video { object-fit: cover; opacity: .62; }
+        .market-hero-shade { background: linear-gradient(90deg, rgba(7, 24, 27, .82), rgba(7, 24, 27, .3) 58%, rgba(7, 24, 27, .72)); }
+        .market-hero-content { position: relative; z-index: 1; width: min(1180px, calc(100% - 2rem)); padding: 4.5rem 0 3rem; color: #fff; }
+        .market-hero h1 { max-width: 650px; margin: .5rem 0 .8rem; color: #fff; font-size: clamp(2.3rem, 5vw, 4.5rem); line-height: 1.03; }
+        .market-hero p { max-width: 570px; margin: 0 0 2rem; color: rgba(255,255,255,.82); font-size: 1.08rem; }
+        .search-row { display: grid; grid-template-columns: minmax(200px, .8fr) minmax(260px, 1.35fr); gap: .75rem; max-width: 850px; }
+        .market-search { display: flex; align-items: center; gap: .65rem; min-height: 58px; padding: 0 1rem; border-radius: 8px; background: #fff; color: #526066; box-shadow: 0 12px 26px rgba(0,0,0,.15); }
+        .market-search input { min-width: 0; width: 100%; border: 0; outline: 0; background: transparent; color: #243338; font: inherit; }
+        .category-strip { display: flex; gap: .6rem; overflow-x: auto; max-width: 850px; max-height: 0; padding: 0; opacity: 0; scrollbar-width: thin; transition: max-height .2s, opacity .2s, padding .2s; }
+        .market-hero-content:has(#product-search:focus) .category-strip { max-height: 58px; padding: .8rem 0 0; opacity: 1; }
+        .category-strip a { flex: 0 0 auto; padding: .45rem .8rem; border: 1px solid rgba(255,255,255,.3); border-radius: 99px; color: #fff; font-size: .88rem; }
+        .market-main { width: min(1180px, calc(100% - 2rem)); margin: 0 auto; padding: 2.8rem 0 7rem; }
+        .market-heading { display: flex; align-items: end; justify-content: space-between; gap: 1rem; margin-bottom: 1.2rem; }
+        .market-heading h2 { margin: 0; font-size: clamp(1.5rem, 3vw, 2.1rem); }
+        .market-heading p { margin: 0; color: var(--muted); }
+        .market-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 1rem; }
+        .market-card { overflow: hidden; background: #fff; border: 1px solid var(--line); border-radius: 10px; box-shadow: 0 5px 16px rgba(27, 51, 49, .06); transition: transform .2s, box-shadow .2s; cursor: pointer; }
+        .market-card:hover { transform: translateY(-4px); box-shadow: 0 12px 24px rgba(27, 51, 49, .13); }
+        .market-card img { display: block; width: 100%; height: 185px; object-fit: cover; background: #e9efec; }
+        .market-card-info { padding: .85rem 1rem 1rem; }
+        .market-card-category { color: #0a8f80; font-size: .75rem; font-weight: 700; text-transform: uppercase; }
+        .market-card h3 { margin: .25rem 0 .45rem; font-size: 1rem; }
+        .market-card p { min-height: 2.4em; margin: 0 0 .7rem; color: var(--muted); font-size: .85rem; }
+        .market-price { color: #d05b2d; font-weight: 800; }
+        .market-card-footer { display: flex; align-items: center; justify-content: space-between; gap: .5rem; }
+        .cart-add { padding: .4rem .55rem; border: 1px solid #b9ded7; border-radius: 6px; background: #effaf7; color: #087f72; cursor: pointer; font: inherit; font-size: .76rem; font-weight: 700; }
+        .bottom-tabs { position: fixed; right: 0; bottom: 0; left: 0; z-index: 900; display: flex; justify-content: center; gap: .25rem; padding: .55rem max(1rem, env(safe-area-inset-left)) calc(.55rem + env(safe-area-inset-bottom)); background: rgba(255,255,255,.96); border-top: 1px solid var(--line); box-shadow: 0 -5px 18px rgba(27,51,49,.1); }
+        .bottom-tabs a { display: grid; min-width: 82px; justify-items: center; gap: .1rem; padding: .3rem .55rem; border-radius: 7px; color: #62716f; font-size: .72rem; }
+        .bottom-tabs a:hover, .bottom-tabs a.active { background: #e8f5f1; color: #078575; }
+        .bottom-tabs strong { font-size: 1.2rem; line-height: 1; }
+        .site-splash { position: fixed; inset: 0; z-index: 2000; display: grid; place-items: center; overflow: hidden; background: #fff2ea; opacity: 1; visibility: visible; transition: opacity .55s ease, visibility .55s ease; }
+        .site-splash::before, .site-splash::after { content: ''; position: absolute; border-radius: 50%; pointer-events: none; }
+        .site-splash::before { width: min(68vw, 640px); height: min(68vw, 640px); background: #ffd65d; opacity: .5; transform: translate(-38%, -34%); }
+        .site-splash::after { width: min(70vw, 660px); height: min(70vw, 660px); background: #ce0e58; opacity: .18; transform: translate(42%, 38%); }
+        .site-splash.is-hidden { opacity: 0; visibility: hidden; pointer-events: none; }
+        .site-splash-content { position: relative; z-index: 1; display: grid; justify-items: center; gap: 1rem; animation: splash-arrival .8s cubic-bezier(.2,.8,.2,1) both; }
+        .site-splash-logo { width: clamp(150px, 28vw, 260px); height: clamp(150px, 28vw, 260px); object-fit: cover; border: 10px solid rgba(255,255,255,.9); border-radius: 28%; box-shadow: 0 22px 55px rgba(59,29,23,.2); }
+        .site-splash-name { margin: 0; color: #3b1d17; font-size: clamp(1.7rem, 5vw, 2.8rem); font-weight: 800; letter-spacing: .04em; }
+        .site-splash-tagline { margin: -.65rem 0 0; color: rgba(59,29,23,.72); font-size: .82rem; letter-spacing: .18em; text-transform: uppercase; }
+        @keyframes splash-arrival { from { opacity: 0; transform: scale(.88); } to { opacity: 1; transform: scale(1); } }
+        @media (prefers-reduced-motion: reduce) { .site-splash { transition-duration: .2s; } .site-splash-content { animation: none; } }
+        .market-footer { margin-top: 1rem; padding: 2.5rem max(1rem, calc((100% - 1180px) / 2)) 6.5rem; background: rgba(36,51,56,.94); color: rgba(255,255,255,.8); }
+        .market-footer-inner { display: grid; grid-template-columns: minmax(220px, 1.4fr) repeat(2, minmax(140px, 1fr)); gap: 2rem; width: min(1180px, 100%); margin: 0 auto; }
+        .market-footer-brand { display: flex; align-items: center; gap: .7rem; color: #fff; font-size: 1.2rem; font-weight: 800; }
+        .market-footer-brand img { width: 42px; height: 42px; object-fit: cover; border-radius: 10px; }
+        .market-footer p { max-width: 300px; margin: .9rem 0 0; font-size: .9rem; line-height: 1.6; }
+        .market-footer h2 { margin: 0 0 .75rem; color: #ffd65d; font-size: .86rem; letter-spacing: .08em; text-transform: uppercase; }
+        .market-footer ul { display: grid; gap: .4rem; margin: 0; padding: 0; list-style: none; }
+        .market-footer a { color: rgba(255,255,255,.78); font-size: .9rem; }
+        .market-footer a:hover { color: #fff; }
+        .market-footer-bottom { width: min(1180px, 100%); margin: 2rem auto 0; padding-top: 1rem; border-top: 1px solid rgba(255,255,255,.16); color: rgba(255,255,255,.58); font-size: .78rem; }
+        @media (max-width: 760px) { .market-hero { min-height: 510px; } .market-hero-content { padding-top: 5rem; } .search-row { grid-template-columns: 1fr; } .market-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } .market-card img { height: 145px; } .bottom-tabs a { min-width: 57px; } .bottom-tabs { gap: 0; } }
+        @media (max-width: 760px) { .market-footer { padding-top: 2rem; } .market-footer-inner { grid-template-columns: 1fr 1fr; gap: 1.5rem; } .market-footer-brand-block { grid-column: 1 / -1; } }
+        @media (max-width: 390px) { .market-grid { gap: .65rem; } .market-card-info { padding: .65rem; } .market-card img { height: 120px; } .bottom-tabs a { padding-inline: .2rem; } }
+    </style>
+</head>
+<body class="market-page">
+    <div class="site-splash" id="site-splash" role="status" aria-label="Chargement de B&G Shop">
+        <div class="site-splash-content">
+            <img src="images/bglogo.jpeg" alt="B&G Shop" class="site-splash-logo" />
+            <p class="site-splash-name">B&amp;G Shop</p>
+            <p class="site-splash-tagline">Trouvez votre prochain coup de cœur</p>
+        </div>
+    </div>
+    <nav class="navbar market-nav">
+        <div class="navbar-logo market-brand"><img src="images/bglogo.jpeg" alt="B&G Shop logo" class="site-logo" /><span>B&G Shop</span></div>
+        <div class="navbar-links market-links"><div id="auth-container"></div></div>
+    </nav>
+
+    <main class="page-content">
+        <section class="market-hero" aria-label="Recherche B&G Shop">
+            <video class="market-hero-video" id="hero-ad-video" autoplay muted loop playsinline></video>
+            <div class="market-hero-shade"></div>
+            <div class="market-hero-content">
+                <span class="eyebrow">La marketplace qui vous rapproche</span>
+                <h1>Trouvez votre prochain coup de cœur.</h1>
+                <p>Des articles sélectionnés près de chez vous, des vendeurs passionnés et de nouvelles trouvailles chaque jour.</p>
+                <div class="search-row">
+                    <label class="market-search"><span aria-hidden="true">⌖</span><input id="location-search" type="search" placeholder="Pays ou ville" aria-label="Rechercher un pays ou une ville" /></label>
+                    <label class="market-search"><span aria-hidden="true">⌕</span><input id="product-search" type="search" placeholder="Que recherchez-vous ?" aria-label="Rechercher un article" /></label>
+                </div>
+                <div class="category-strip" id="category-strip" aria-label="Catégories"></div>
+            </div>
+        </section>
+
+        <section class="market-main" id="trending">
+            <div class="market-heading"><div><p class="eyebrow">Sélection B&G</p><h2>Articles tendances</h2></div><p id="result-count"></p></div>
+            <div class="market-grid" id="trending-products"></div>
+        </section>
+    </main>
+
+    <footer class="market-footer">
+        <div class="market-footer-inner">
+            <div class="market-footer-brand-block">
+                <div class="market-footer-brand"><img src="images/bglogo.jpeg" alt="B&G Shop" /> <span>B&amp;G Shop</span></div>
+                <p>La marketplace qui vous rapproche des bonnes affaires et des vendeurs passionnés.</p>
+            </div>
+            <div>
+                <h2>Explorer</h2>
+                <ul>
+                    <li><a href="index.html#trending">Articles tendances</a></li>
+                    <li><a href="categories.html">Toutes les catégories</a></li>
+                    <li><a href="videos.html">Vidéos</a></li>
+                </ul>
+            </div>
+            <div>
+                <h2>Votre espace</h2>
+                <ul>
+                    <li><a href="login.html">Se connecter</a></li>
+                    <li><a href="panier.html">Mon panier</a></li>
+                    <li><a href="settings.html">Paramètres</a></li>
+                </ul>
+            </div>
+        </div>
+        <div class="market-footer-bottom">© 2026 B&amp;G Shop. Tous droits réservés.</div>
+    </footer>
+
+    <nav class="bottom-tabs" aria-label="Navigation principale">
+        <a class="active" href="index.html"><strong>⌂</strong><span>Accueil</span></a>
+        <a href="videos.html"><strong>▶</strong><span>Réel</span></a>
+        <a href="panier.html"><strong>▢</strong><span>Panier</span></a>
+        <a href="messages.html"><strong>◌</strong><span>Messages</span></a>
+        <a href="settings.html"><strong>⚙</strong><span>Paramètres</span></a>
+    </nav>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="js/supabase-client.js"></script>
+    <script src="js/app.js"></script>
+    <script>
+        const escapeHtml = (value) => String(value || '').replace(/[&<>'"]/g, (char) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[char]));
+        function renderCategories() {
+            document.getElementById('category-strip').innerHTML = app.getCategories().map((category) => `<a href="categories.html?category=${encodeURIComponent(category.name)}">${escapeHtml(category.name)}</a>`).join('');
+        }
+        function renderProducts() {
+            const query = document.getElementById('product-search').value.trim().toLowerCase();
+            const products = app.getProducts().filter((product) => !query || `${product.title} ${product.category} ${product.description}`.toLowerCase().includes(query));
+            document.getElementById('result-count').textContent = `${products.length} article${products.length > 1 ? 's' : ''}`;
+            document.getElementById('trending-products').innerHTML = products.length ? products.map((product) => `<article class="market-card" onclick="goToProduct(${product.id})"><img src="${escapeHtml(product.image)}" alt="${escapeHtml(product.title)}" /><div class="market-card-info"><div class="market-card-category">${escapeHtml(product.category)}</div><h3>${escapeHtml(product.title)}</h3><p>${escapeHtml(product.description).slice(0, 72)}...</p><div class="market-card-footer"><div class="market-price">${product.price} FCFA</div><button class="cart-add" onclick="event.stopPropagation(); addToCart(${product.id})">Ajouter</button></div></div></article>`).join('') : '<p>Aucun article ne correspond à votre recherche.</p>';
+        }
+        function addToCart(productId) { app.addToCart(productId); window.location.href = 'panier.html'; }
+        function goToProduct(productId) { window.location.href = `product-detail.html?id=${productId}`; }
+        function openMessages() { window.location.href = app.checkAuth() ? 'messages.html' : 'login.html'; }
+        document.addEventListener('DOMContentLoaded', () => {
+            const splash = document.getElementById('site-splash');
+            const splashDuration = window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 400 : 1800;
+            window.setTimeout(() => splash.classList.add('is-hidden'), splashDuration);
+            renderCategories(); renderProducts();
+            document.getElementById('product-search').addEventListener('input', renderProducts);
+            const videos = app.getAdVideos().filter((video) => app.getAdVideoIds().includes(video.id));
+            if (videos[0]) { const player = document.getElementById('hero-ad-video'); player.src = videos[0].videoUrl; player.play().catch(() => {}); }
+        });
+    </script>
+</body>
+</html>

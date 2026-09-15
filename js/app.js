@@ -395,11 +395,16 @@ const app = {
     const client = window.bgSupabase?.getClient();
     const user = this.checkAuth();
     if (client) {
-      if (!user?.id) {
-        throw new Error('Vous devez être connecté pour publier un article.');
+      const { data: authData, error: authError } = await client.auth.getUser();
+      if (authError || !authData.user?.id) {
+        throw new Error('Votre session Supabase est expirée. Reconnectez-vous pour publier un article.');
+      }
+      const sellerId = authData.user.id;
+      if (!user || user.role !== 'admin') {
+        throw new Error('Seul un administrateur peut publier un article.');
       }
       const { data, error } = await client.from('products').insert({
-        seller_id: user?.id || null,
+        seller_id: sellerId,
         title: product.title,
         category: product.category,
         price: product.price,

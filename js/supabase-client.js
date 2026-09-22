@@ -20,7 +20,14 @@ window.bgSupabase = {
     if (!this.client) {
       this.client = window.supabase.createClient(
         window.bgSupabaseConfig.url,
-        window.bgSupabaseConfig.anonKey
+        window.bgSupabaseConfig.anonKey,
+        {
+          auth: {
+            persistSession: true,
+            autoRefreshToken: true,
+            detectSessionInUrl: true
+          }
+        }
       );
     }
     return this.client;

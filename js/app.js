@@ -238,11 +238,14 @@ const app = {
       const { data, error } = await client.auth.signInWithPassword({ email, password });
       if (error) return { success: false, message: error.message };
       const { data: profile, error: profileError } = await client.from('profiles').select('*').eq('id', data.user.id).maybeSingle();
-      if (profileError) return { success: false, message: `Connexion réussie, mais profil inaccessible : ${profileError.message}` };
-      if (!profile) return { success: false, message: 'Ce compte Supabase n’a pas encore de profil. Exécutez la migration Supabase puis réessayez.' };
-      const user = profile;
-      localStorage.setItem('bgshop_currentUser', JSON.stringify(user));
-      return { success: true, user };
+      try {
+        const user = await this.getAuthenticatedUser();
+        if (!user) return { success: false, message: 'Session Supabase introuvable après la connexion.' };
+        return { success: true, user };
+      } catch (profileError) {
+        await client.auth.signOut();
+        return { success: false, message: profileError.message };
+      }
     }
     const users = JSON.parse(localStorage.getItem('bgshop_users'));
     const user = users.find(u => u.email === email && u.password === password);

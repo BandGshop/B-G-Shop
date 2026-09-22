@@ -4,6 +4,15 @@ insert into storage.buckets (id, name, public)
 values ('videos', 'videos', true)
 on conflict (id) do nothing;
 
+-- Recrée les profils manquants des utilisateurs Auth existants.
+insert into public.profiles (id, email, name)
+select id, email, coalesce(raw_user_meta_data ->> 'name', split_part(email, '@', 1))
+from auth.users
+where email is not null
+on conflict (id) do update set email = excluded.email;
+
+-- Après cette migration, définissez le rôle admin de votre compte dans Table Editor > profiles.
+
 do $$ begin
   create type public.payment_method as enum ('mobile_money', 'cash_on_delivery');
 exception when duplicate_object then null;

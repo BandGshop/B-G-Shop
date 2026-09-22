@@ -101,9 +101,9 @@ Site web/
 - Protection des pages admin
 - Rôles (user/admin)
 
-### Comptes de Test
-- **Admin**: `admin@bgshop.com` / `admin123`
-- Créer vos propres comptes utilisateur
+### Comptes
+- Les comptes, y compris l’administrateur, sont gérés dans Supabase Auth.
+- Créer vos propres comptes utilisateur depuis la page d’inscription.
 
 ---
 
@@ -153,7 +153,7 @@ Remplir formulaire (Nom, Tel, Adresse)
 ```
 admin.html
   ↓
-Connexion (admin@bgshop.com)
+Connexion avec les identifiants du compte administrateur Supabase
   ↓
 Dashboard avec statistiques
   ↓

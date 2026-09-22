@@ -24,7 +24,7 @@ Le site possède maintenant un schéma PostgreSQL prêt pour Supabase dans [`sup
 
 1. Créez un projet sur [Supabase](https://supabase.com/).
 2. Ouvrez **SQL Editor**, collez le contenu de `supabase/schema.sql`, puis exécutez-le.
-3. Dans **Authentication > Users**, créez le compte administrateur avec l’adresse `admin@bgshop.com`.
+3. Dans **Authentication > Users**, créez le compte administrateur avec l’adresse de votre choix.
 4. Dans **Table Editor > profiles**, remplacez le rôle de ce compte par `admin`.
 5. Récupérez l’URL du projet et la clé publique dans **Project Settings > API** pour connecter les pages à Supabase.
 
@@ -59,9 +59,7 @@ Le QR code du site est disponible dans [images/bgshop-qr.png](images/bgshop-qr.p
 ### Pour les Administrateurs
 
 1. **Ouvrir login.html**
-2. **Connectez-vous avec:**
-   - Email: `admin@bgshop.com`
-   - Mot de passe: `admin123`
+2. **Connectez-vous avec les identifiants du compte administrateur créé dans Supabase.**
 3. **Accédez au tableau de bord** (`admin.html`)
 4. **Ajouter des articles:**
    - Titre, Catégorie, Prix, URL Image, Description
@@ -173,7 +171,7 @@ Pour remplacer les images placeholder par les vôtres:
 5. Vérifiez la confirmation
 
 ### Scénario 2: Ajouter un article en tant qu'admin
-1. Connectez-vous avec admin@bgshop.com
+1. Connectez-vous avec les identifiants de votre compte administrateur Supabase
 2. Allez dans "Ajouter un article"
 3. Remplissez tous les champs
 4. Cliquez "Ajouter l'article"

@@ -3,6 +3,7 @@
     <head>
         <meta charset="UTF-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <link rel="icon" type="image/jpeg" href="images/bglogo.jpeg" />
         <title>B&G Shop | Détails du produit</title>
         <link rel="stylesheet" href="styles.css" />
         <style>
@@ -290,6 +291,17 @@
                         <label for="order-address">Adresse de livraison *</label>
                         <textarea id="order-address" required></textarea>
                     </div>
+                    <fieldset class="form-group">
+                        <legend>Mode de paiement *</legend>
+                        <label><input type="radio" name="payment-method" value="mobile_money" onchange="togglePaymentFields()" required /> MTN Mobile Money</label>
+                        <label><input type="radio" name="payment-method" value="cash_on_delivery" onchange="togglePaymentFields()" /> Paiement à la livraison</label>
+                    </fieldset>
+                    <div id="mobile-money-fields" style="display: none; padding: 1rem; border: 1px solid var(--bordure); border-radius: 10px; margin-bottom: 1rem;">
+                        <p id="payment-numbers-message" style="margin-top: 0;">Numéro de dépôt en cours de chargement...</p>
+                        <label for="payment-proof">Capture ou photo du reçu MTN *</label>
+                        <input type="file" id="payment-proof" accept="image/*" />
+                    </div>
+                    <p id="cash-payment-message" style="display: none; color: var(--accent-2);">Vous payerez à la livraison</p>
                     <div style="display: flex; gap: 1rem">
                         <button type="submit" class="btn btn-primaire" style="flex: 1">Envoyer la commande</button>
                         <button type="button" onclick="closeOrderModal()" class="btn btn-secondaire" style="flex: 1">
@@ -427,6 +439,7 @@
 
             function openOrderModal() {
                 document.getElementById("order-modal").style.display = "flex";
+                loadPaymentNumbers();
             }
 
             function closeOrderModal() {
@@ -435,6 +448,20 @@
 
             function redirectToLogin() {
                 window.location.href = "login.html";
+            }
+
+            async function loadPaymentNumbers() {
+                const numbers = await app.getPaymentNumbers();
+                document.getElementById("payment-numbers-message").textContent = numbers.length
+                    ? `Faites le dépôt MTN sur : ${numbers.map((number) => `${number.phone}${number.label ? ` (${number.label})` : ''}`).join(', ')}`
+                    : "Aucun numéro MTN n'est disponible pour le moment. Choisissez le paiement à la livraison.";
+            }
+
+            function togglePaymentFields() {
+                const method = document.querySelector('input[name="payment-method"]:checked')?.value;
+                document.getElementById("mobile-money-fields").style.display = method === "mobile_money" ? "block" : "none";
+                document.getElementById("cash-payment-message").style.display = method === "cash_on_delivery" ? "block" : "none";
+                document.getElementById("payment-proof").required = method === "mobile_money";
             }
 
             function toggleProductCollection(key) {
@@ -456,6 +483,20 @@
                 }
 
                 const product = app.getProduct(currentProductId);
+                const paymentMethod = document.querySelector('input[name="payment-method"]:checked')?.value;
+                const proofFile = document.getElementById("payment-proof").files[0];
+                if (paymentMethod === "mobile_money" && !proofFile) {
+                    alert("Veuillez joindre la capture ou la photo du reçu MTN.");
+                    return;
+                }
+
+                const paymentProof = paymentMethod === "mobile_money" && proofFile
+                    ? await new Promise((resolve) => {
+                        const reader = new FileReader();
+                        reader.onload = () => resolve(reader.result);
+                        reader.readAsDataURL(proofFile);
+                    })
+                    : null;
 
                 const order = {
                     customerName: document.getElementById("order-name").value,
@@ -466,6 +507,8 @@
                     productPrice: product.price,
                     userId: user.id,
                     userEmail: user.email,
+                    paymentMethod,
+                    paymentProof,
                 };
 
                 try {

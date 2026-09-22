@@ -3,6 +3,7 @@
     <head>
         <meta charset="UTF-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <link rel="icon" type="image/jpeg" href="images/bglogo.jpeg" />
         <title>B&G Shop | Connexion</title>
         <link rel="stylesheet" href="styles.css" />
         <style>
@@ -68,6 +69,10 @@
                 box-shadow: 0 0 0 3px rgba(255, 63, 149, 0.2);
             }
 
+            .password-field { display: flex; align-items: center; gap: 0.5rem; }
+            .password-field input { flex: 1; }
+            .password-toggle { border: 0; background: transparent; color: var(--texte-secondaire); cursor: pointer; font-size: 1.2rem; padding: 0.5rem; }
+
             .form-actions {
                 display: flex;
                 gap: 1rem;
@@ -125,7 +130,7 @@
                 </div>
                 <div class="form-group">
                     <label for="login-password">Mot de passe</label>
-                    <input type="password" id="login-password" placeholder="••••••••" />
+                    <div class="password-field"><input type="password" id="login-password" placeholder="••••••••" /><button type="button" class="password-toggle" onclick="togglePassword('login-password', this)" aria-label="Afficher le mot de passe">👁</button></div>
                     <div id="login-password-error" class="error-message"></div>
                 </div>
                 <div class="form-actions">
@@ -155,12 +160,12 @@
                 </div>
                 <div class="form-group">
                     <label for="register-password">Mot de passe</label>
-                    <input type="password" id="register-password" placeholder="••••••••" />
+                    <div class="password-field"><input type="password" id="register-password" placeholder="••••••••" /><button type="button" class="password-toggle" onclick="togglePassword('register-password', this)" aria-label="Afficher le mot de passe">👁</button></div>
                     <div id="register-password-error" class="error-message"></div>
                 </div>
                 <div class="form-group">
                     <label for="register-confirm">Confirmer le mot de passe</label>
-                    <input type="password" id="register-confirm" placeholder="••••••••" />
+                    <div class="password-field"><input type="password" id="register-confirm" placeholder="••••••••" /><button type="button" class="password-toggle" onclick="togglePassword('register-confirm', this)" aria-label="Afficher le mot de passe">👁</button></div>
                     <div id="register-confirm-error" class="error-message"></div>
                 </div>
                 <div class="form-actions">
@@ -189,13 +194,18 @@
             }
 
             async function handleLogin() {
-                const email = document.getElementById("login-email").value;
+                const email = document.getElementById("login-email").value.trim();
                 const password = document.getElementById("login-password").value;
 
                 if (!email || !password) {
                     document.getElementById("login-error").textContent = "Veuillez remplir tous les champs";
                     return;
                 }
+                if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email)) {
+                    document.getElementById("login-email-error").textContent = "L'adresse mail invalide";
+                    return;
+                }
+                document.getElementById("login-email-error").textContent = "";
 
                 const result = await app.login(email, password);
                 if (result.success) {
@@ -223,6 +233,9 @@
 
                 if (!email) {
                     document.getElementById("register-email-error").textContent = "L'email est requis";
+                    hasError = true;
+                } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email)) {
+                    document.getElementById("register-email-error").textContent = "L'adresse mail invalide";
                     hasError = true;
                 } else {
                     document.getElementById("register-email-error").textContent = "";
@@ -256,6 +269,13 @@
                     reader.onload = () => finishRegistration(reader.result);
                     reader.readAsDataURL(photo);
                 } else finishRegistration();
+            }
+
+            function togglePassword(inputId, button) {
+                const input = document.getElementById(inputId);
+                input.type = input.type === "password" ? "text" : "password";
+                button.textContent = input.type === "password" ? "👁" : "🙈";
+                button.setAttribute("aria-label", input.type === "password" ? "Afficher le mot de passe" : "Masquer le mot de passe");
             }
 
             // Enter key to submit

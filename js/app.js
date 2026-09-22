@@ -34,7 +34,9 @@ const app = {
       createdDate: order.created_at,
       productId: order.order_items?.[0]?.product_id,
       productTitle: order.order_items?.[0]?.product_title,
-      productPrice: order.order_items?.[0]?.product_price
+      productPrice: order.order_items?.[0]?.product_price,
+      paymentMethod: order.payment_method,
+      paymentProof: order.payment_proof
     }))));
 
     const [{ data: messages }, { data: profiles }] = await Promise.all([
@@ -146,11 +148,10 @@ const app = {
 
   // Ensure default data exists in localStorage
   ensureDefaultData() {
-    if (!localStorage.getItem('bgshop_users')) {
-      localStorage.setItem('bgshop_users', JSON.stringify([
-        { id: 1, email: 'admin@bgshop.com', password: 'admin123', role: 'admin', name: 'B&G' }
-      ]));
-    }
+    const localUsers = JSON.parse(localStorage.getItem('bgshop_users') || '[]');
+    localStorage.setItem('bgshop_users', JSON.stringify(localUsers.filter((user) => user.email !== 'admin@bgshop.com')));
+    const currentUser = JSON.parse(localStorage.getItem('bgshop_currentUser') || 'null');
+    if (currentUser?.email === 'admin@bgshop.com') localStorage.removeItem('bgshop_currentUser');
 
     if (localStorage.getItem('bgshop_products')) {
       const products = JSON.parse(localStorage.getItem('bgshop_products'));
@@ -471,7 +472,9 @@ const app = {
         customer_id: order.userId,
         customer_name: order.customerName,
         customer_phone: order.customerPhone,
-        customer_address: order.customerAddress
+        customer_address: order.customerAddress,
+        payment_method: order.paymentMethod,
+        payment_proof: order.paymentProof || null
       }).select('id, created_at').single();
       if (error) throw new Error(`Impossible d’enregistrer la commande : ${error.message}`);
       const { error: itemError } = await client.from('order_items').insert({
@@ -494,6 +497,55 @@ const app = {
     orders.push(order);
     localStorage.setItem('bgshop_orders', JSON.stringify(orders));
     return order;
+  },
+
+  async getPaymentNumbers() {
+    const client = window.bgSupabase?.getClient();
+    if (client) {
+      const { data } = await client.from('payment_numbers').select('*').order('created_at', { ascending: true });
+      if (data) {
+        localStorage.setItem('bgshop_payment_numbers', JSON.stringify(data));
+        return data;
+      }
+    }
+    return JSON.parse(localStorage.getItem('bgshop_payment_numbers') || '[]');
+  },
+
+  async savePaymentNumber(number) {
+    const client = window.bgSupabase?.getClient();
+    if (client) {
+      const { data, error } = await client.from('payment_numbers').insert({ phone: number.phone, label: number.label || null }).select().single();
+      if (error) throw new Error(`Impossible d’ajouter le numéro : ${error.message}`);
+      number = data;
+    } else {
+      number = { ...number, id: Date.now(), created_at: new Date().toISOString() };
+    }
+    const numbers = JSON.parse(localStorage.getItem('bgshop_payment_numbers') || '[]');
+    numbers.push(number);
+    localStorage.setItem('bgshop_payment_numbers', JSON.stringify(numbers));
+    return number;
+  },
+
+  async deletePaymentNumber(numberId) {
+    const client = window.bgSupabase?.getClient();
+    if (client) {
+      const { error } = await client.from('payment_numbers').delete().eq('id', numberId);
+      if (error) throw new Error(`Impossible de retirer le numéro : ${error.message}`);
+    }
+    localStorage.setItem('bgshop_payment_numbers', JSON.stringify(
+      JSON.parse(localStorage.getItem('bgshop_payment_numbers') || '[]').filter((number) => number.id !== numberId)
+    ));
+  },
+
+  async updatePaymentNumber(numberId, changes) {
+    const client = window.bgSupabase?.getClient();
+    if (client) {
+      const { data, error } = await client.from('payment_numbers').update({ phone: changes.phone, label: changes.label || null }).eq('id', numberId).select().single();
+      if (error) throw new Error(`Impossible de modifier le numéro : ${error.message}`);
+      changes = data;
+    }
+    const numbers = JSON.parse(localStorage.getItem('bgshop_payment_numbers') || '[]');
+    localStorage.setItem('bgshop_payment_numbers', JSON.stringify(numbers.map((number) => number.id === numberId ? { ...number, ...changes } : number)));
   },
 
   getOrders() {

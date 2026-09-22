@@ -3,6 +3,7 @@
     <head>
         <meta charset="UTF-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <link rel="icon" type="image/jpeg" href="images/bglogo.jpeg" />
         <title>B&G Shop | Admin</title>
         <link rel="stylesheet" href="styles.css" />
         <style>
@@ -404,6 +405,7 @@
                 <button class="nav-btn" onclick="switchSection('add-product', this)">Ajouter un article</button>
                 <button class="nav-btn" onclick="switchSection('manage-products', this)">Gérer les articles</button>
                 <button class="nav-btn" onclick="switchSection('orders', this)">Commandes</button>
+                <button class="nav-btn" onclick="switchSection('payment-numbers', this)">Numéros MTN</button>
                 <button class="nav-btn" onclick="switchSection('videos', this)">Vidéos</button>
                 <button class="nav-btn" onclick="window.location.href='messages.html'">Messages</button>
                 <button onclick="handleAdminLogout()" style="color: #ff6b6b; margin-top: 2rem">Déconnexion</button>
@@ -542,8 +544,10 @@
                                 <th>Client</th>
                                 <th>Téléphone</th>
                                 <th>Article</th>
+                                <th>Paiement</th>
                                 <th>Statut</th>
                                 <th>Date</th>
+                                <th>Preuve</th>
                                 <th>Action</th>
                             </tr>
                         </thead>
@@ -551,6 +555,18 @@
                             <!-- Orders will be loaded here -->
                         </tbody>
                     </table>
+                </div>
+
+                <div id="payment-numbers" class="admin-section">
+                    <div class="admin-header"><h1>Numéros MTN Mobile Money</h1></div>
+                    <div class="form-card">
+                        <form onsubmit="addPaymentNumber(event)">
+                            <div class="form-group"><label for="mtn-number">Numéro de transaction *</label><input id="mtn-number" type="tel" required placeholder="Ex. 06 123 45 67" /></div>
+                            <div class="form-group"><label for="mtn-label">Libellé (facultatif)</label><input id="mtn-label" type="text" placeholder="Compte principal" /></div>
+                            <button class="btn btn-primaire" type="submit">Ajouter le numéro</button>
+                        </form>
+                    </div>
+                    <div id="payment-numbers-list" class="dashboard-grid"></div>
                 </div>
 
                 <div id="videos" class="admin-section">
@@ -654,6 +670,7 @@
                 if (sectionId === "dashboard") loadDashboard();
                 if (sectionId === "manage-products") loadProductsList();
                 if (sectionId === "orders") loadOrders();
+                if (sectionId === "payment-numbers") loadPaymentNumbers();
                 if (sectionId === "videos") loadVideoManagement();
             }
 
@@ -803,7 +820,7 @@
 
                 if (orders.length === 0) {
                     tbody.innerHTML =
-                        '<tr><td colspan="7" style="text-align: center; padding: 2rem; color: var(--texte-secondaire);">Aucune commande pour le moment</td></tr>';
+                        '<tr><td colspan="9" style="text-align: center; padding: 2rem; color: var(--texte-secondaire);">Aucune commande pour le moment</td></tr>';
                     return;
                 }
 
@@ -815,12 +832,14 @@
             <td>${order.customerName}</td>
             <td>${order.customerPhone}</td>
             <td>${order.productTitle}</td>
+            <td>${order.paymentMethod === "mobile_money" ? "MTN Mobile Money" : "À la livraison"}</td>
             <td>
               <span class="status-badge status-${order.status}">
                 ${order.status === "pending" ? "En attente" : "Complétée"}
               </span>
             </td>
             <td>${new Date(order.createdDate).toLocaleDateString("fr-FR")}</td>
+            <td>${order.paymentProof ? `<a href="${order.paymentProof}" target="_blank" rel="noopener">Voir</a>` : "-"}</td>
             <td>
               <button onclick="updateOrderStatus(${order.id}, '${
                         order.status === "pending" ? "completed" : "pending"
@@ -832,6 +851,36 @@
         `
                 )
                 .join("");
+            }
+
+            async function loadPaymentNumbers() {
+                const numbers = await app.getPaymentNumbers();
+                document.getElementById("payment-numbers-list").innerHTML = numbers.length
+                    ? numbers.map((number) => `<div class="stat-card"><strong>${number.phone}</strong><p>${number.label || "Sans libellé"}</p><button class="btn btn-primaire" onclick="editPaymentNumber(${number.id}, '${number.phone}', '${(number.label || '').replace(/'/g, "\\'")}')">Modifier</button> <button class="btn btn-secondaire" onclick="removePaymentNumber(${number.id})">Retirer</button></div>`).join("")
+                    : '<p>Aucun numéro de paiement configuré.</p>';
+            }
+
+            async function addPaymentNumber(event) {
+                event.preventDefault();
+                try {
+                    await app.savePaymentNumber({ phone: document.getElementById("mtn-number").value.trim(), label: document.getElementById("mtn-label").value.trim() });
+                    event.target.reset();
+                    loadPaymentNumbers();
+                } catch (error) { alert(error.message || "Impossible d'ajouter le numéro."); }
+            }
+
+            async function removePaymentNumber(numberId) {
+                if (!confirm("Retirer ce numéro de paiement ?")) return;
+                try { await app.deletePaymentNumber(numberId); loadPaymentNumbers(); }
+                catch (error) { alert(error.message || "Impossible de retirer le numéro."); }
+            }
+
+            async function editPaymentNumber(numberId, currentPhone, currentLabel) {
+                const phone = prompt("Nouveau numéro MTN", currentPhone);
+                if (!phone) return;
+                const label = prompt("Nouveau libellé (facultatif)", currentLabel) || "";
+                try { await app.updatePaymentNumber(numberId, { phone: phone.trim(), label: label.trim() }); loadPaymentNumbers(); }
+                catch (error) { alert(error.message || "Impossible de modifier le numéro."); }
             }
 
             function loadVideoManagement() {

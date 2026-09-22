@@ -25,12 +25,12 @@ Le site possède maintenant un schéma PostgreSQL prêt pour Supabase dans [`sup
 1. Créez un projet sur [Supabase](https://supabase.com/).
 2. Ouvrez **SQL Editor**, collez le contenu de `supabase/schema.sql`, puis exécutez-le.
 3. Dans **Authentication > Users**, créez le compte administrateur avec l’adresse de votre choix.
-4. Dans **Table Editor > profiles**, remplacez le rôle de ce compte par `admin`.
+4. Dans **Table Editor > profiles**, remplacez le rôle de ce compte par `admin` et vérifiez que son adresse email correspond exactement à celle de **Authentication > Users**.
 5. Récupérez l’URL du projet et la clé publique dans **Project Settings > API** pour connecter les pages à Supabase.
 
 Le schéma active la sécurité RLS : les produits et vidéos sont consultables publiquement, tandis que les commandes, messages, paniers et réglages restent limités à leur propriétaire ou à un administrateur. Le site fonctionne encore en mode local tant que la couche JavaScript Supabase n’est pas branchée aux pages.
 
-Si vous avez déjà exécuté l’ancien schéma, exécutez uniquement [`supabase/complete-migration.sql`](supabase/complete-migration.sql) dans Supabase SQL Editor. Il ajoute les favoris vidéo et le stockage sécurisé des vidéos sans recréer les tables existantes.
+Si vous avez déjà exécuté l’ancien schéma, exécutez uniquement [`supabase/complete-migration.sql`](supabase/complete-migration.sql) dans Supabase SQL Editor. Il recrée les profils Auth manquants et ajoute les favoris vidéo, le paiement et le stockage sécurisé des vidéos sans recréer les tables existantes.
 
 Pour vider le catalogue de démonstration avant de publier vos vrais articles, exécutez ensuite [`supabase/clear-demo-products.sql`](supabase/clear-demo-products.sql) dans Supabase SQL Editor.
 

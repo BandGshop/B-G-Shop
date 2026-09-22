@@ -237,7 +237,6 @@ const app = {
     if (client) {
       const { data, error } = await client.auth.signInWithPassword({ email, password });
       if (error) return { success: false, message: error.message };
-      const { data: profile, error: profileError } = await client.from('profiles').select('*').eq('id', data.user.id).maybeSingle();
       try {
         const user = await this.getAuthenticatedUser();
         if (!user) return { success: false, message: 'Session Supabase introuvable après la connexion.' };

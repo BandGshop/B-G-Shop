@@ -627,8 +627,13 @@
         <script src="js/app.js"></script>
         <script>
                         // Check if user is admin. If not, show a styled access message in admin content area.
-                        function checkAdminAccess() {
-                                const user = app.checkAuth();
+                        async function checkAdminAccess() {
+                            let user;
+                            try {
+                                user = await app.getAuthenticatedUser();
+                            } catch (error) {
+                                user = null;
+                            }
                                 if (!user || user.role !== "admin") {
                                         // hide sidebar and show access card
                                         const sidebar = document.querySelector('.admin-sidebar');
@@ -1015,8 +1020,8 @@
             }
 
             // Initialize app data and then check admin access
-            app.init().then(() => {
-                if (checkAdminAccess()) loadDashboard();
+            app.init().then(async () => {
+                if (await checkAdminAccess()) loadDashboard();
             });
         </script>
     </body>

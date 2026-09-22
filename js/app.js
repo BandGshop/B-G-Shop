@@ -207,13 +207,40 @@ const app = {
     return user ? JSON.parse(user) : null;
   },
 
+  async getAuthenticatedUser() {
+    const client = window.bgSupabase?.getClient();
+    if (!client) return this.checkAuth();
+    const { data: sessionData, error: sessionError } = await client.auth.getSession();
+    if (sessionError || !sessionData.session?.user) {
+      localStorage.removeItem('bgshop_currentUser');
+      return null;
+    }
+    const authUser = sessionData.session.user;
+    const { data: profile, error: profileError } = await client
+      .from('profiles')
+      .select('id, email, name, profile_image, role')
+      .eq('id', authUser.id)
+      .maybeSingle();
+    if (profileError) throw new Error(`Impossible de charger votre profil : ${profileError.message}`);
+    if (!profile) throw new Error('Votre compte Supabase n’a pas encore de profil dans la table profiles.');
+    const user = {
+      ...profile,
+      profileImage: profile.profile_image,
+      email: profile.email || authUser.email
+    };
+    localStorage.setItem('bgshop_currentUser', JSON.stringify(user));
+    return user;
+  },
+
   async login(email, password) {
     const client = window.bgSupabase?.getClient();
     if (client) {
       const { data, error } = await client.auth.signInWithPassword({ email, password });
       if (error) return { success: false, message: error.message };
-      const { data: profile } = await client.from('profiles').select('*').eq('id', data.user.id).single();
-      const user = profile || { id: data.user.id, email: data.user.email, name: email.split('@')[0], role: 'user' };
+      const { data: profile, error: profileError } = await client.from('profiles').select('*').eq('id', data.user.id).maybeSingle();
+      if (profileError) return { success: false, message: `Connexion réussie, mais profil inaccessible : ${profileError.message}` };
+      if (!profile) return { success: false, message: 'Ce compte Supabase n’a pas encore de profil. Exécutez la migration Supabase puis réessayez.' };
+      const user = profile;
       localStorage.setItem('bgshop_currentUser', JSON.stringify(user));
       return { success: true, user };
     }

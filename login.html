@@ -216,6 +216,7 @@
             }
 
             async function handleRegister() {
+                const registerButton = document.querySelector('#register-form .form-actions button');
                 const name = document.getElementById("register-name").value;
                 const email = document.getElementById("register-email").value;
                 const password = document.getElementById("register-password").value;
@@ -259,10 +260,18 @@
 
                 if (hasError) return;
 
+                registerButton.disabled = true;
+                document.getElementById("register-error").textContent = "Création du compte...";
                 const finishRegistration = async (profileImage = "") => {
-                    const result = await app.register(email, password, name, profileImage);
-                    if (result.success) window.location.href = "index.html";
-                    else document.getElementById("register-error").textContent = result.message;
+                    try {
+                        const result = await app.register(email.trim(), password, name.trim(), profileImage);
+                        if (result.success) window.location.href = "index.html";
+                        else document.getElementById("register-error").textContent = result.message;
+                    } catch (error) {
+                        document.getElementById("register-error").textContent = error.message || "Impossible de créer le compte.";
+                    } finally {
+                        registerButton.disabled = false;
+                    }
                 };
                 if (photo) {
                     const reader = new FileReader();

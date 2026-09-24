@@ -265,7 +265,19 @@ const app = {
       });
       if (error) return { success: false, message: error.message };
       if (!data.user) return { success: false, message: 'Vérifiez votre adresse email pour activer le compte.' };
-      const { data: profile } = await client.from('profiles').select('*').eq('id', data.user.id).single();
+      if (!data.session) {
+        return {
+          success: false,
+          requiresConfirmation: true,
+          message: 'Compte créé. Consultez votre boîte mail et confirmez votre adresse avant de vous connecter.'
+        };
+      }
+      const { data: profile, error: profileError } = await client
+        .from('profiles')
+        .select('*')
+        .eq('id', data.user.id)
+        .maybeSingle();
+      if (profileError) return { success: false, message: `Compte créé, mais le profil est indisponible : ${profileError.message}` };
       const user = profile || { id: data.user.id, email, name, profileImage, role: 'user' };
       localStorage.setItem('bgshop_currentUser', JSON.stringify(user));
       return { success: true, user };

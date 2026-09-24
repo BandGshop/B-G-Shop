@@ -269,7 +269,7 @@ const app = {
         return {
           success: false,
           message: rateLimitMessage
-            ? 'Supabase limite temporairement les emails de confirmation. Attendez quelques minutes avant de réessayer, ou désactivez la confirmation email dans Authentication > Providers > Email pour les tests.'
+            ? 'Limite d’emails atteinte. Attendez quelques minutes ou désactivez la confirmation email dans Supabase pour les tests.'
             : error.message
         };
       }

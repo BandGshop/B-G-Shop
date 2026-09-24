@@ -28,6 +28,16 @@ Le site possède maintenant un schéma PostgreSQL prêt pour Supabase dans [`sup
 4. Dans **Table Editor > profiles**, remplacez le rôle de ce compte par `admin` et vérifiez que son adresse email correspond exactement à celle de **Authentication > Users**.
 5. Récupérez l’URL du projet et la clé publique dans **Project Settings > API** pour connecter les pages à Supabase.
 
+Si le compte existe déjà dans **Authentication > Users** mais n'apparaît pas dans `profiles`, exécutez d'abord `supabase/complete-migration.sql`. Pour donner les droits administrateur à une adresse précise, exécutez ensuite cette requête dans **SQL Editor** en remplaçant l'adresse :
+
+```sql
+update public.profiles
+set role = 'admin'
+where lower(email) = lower('votre-adresse@example.com');
+```
+
+La connexion admin utilise ensuite exactement la même page `login.html` que les autres comptes. L'accès à `admin.html` est accordé uniquement si la ligne correspondante contient `role = 'admin'`.
+
 Le schéma active la sécurité RLS : les produits et vidéos sont consultables publiquement, tandis que les commandes, messages, paniers et réglages restent limités à leur propriétaire ou à un administrateur. Le site fonctionne encore en mode local tant que la couche JavaScript Supabase n’est pas branchée aux pages.
 
 Si vous avez déjà exécuté l’ancien schéma, exécutez uniquement [`supabase/complete-migration.sql`](supabase/complete-migration.sql) dans Supabase SQL Editor. Il recrée les profils Auth manquants et ajoute les favoris vidéo, le paiement et le stockage sécurisé des vidéos sans recréer les tables existantes.

@@ -12,6 +12,10 @@ where email is not null
 on conflict (id) do update set email = excluded.email;
 
 -- Après cette migration, définissez le rôle admin de votre compte dans Table Editor > profiles.
+-- Ou exécutez cette requête dans SQL Editor après avoir remplacé l'adresse :
+-- update public.profiles
+-- set role = 'admin'
+-- where lower(email) = lower('votre-adresse@example.com');
 
 do $$ begin
   create type public.payment_method as enum ('mobile_money', 'cash_on_delivery');

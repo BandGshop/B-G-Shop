@@ -263,7 +263,16 @@ const app = {
         password,
         options: { data: { name, profile_image: profileImage } }
       });
-      if (error) return { success: false, message: error.message };
+      if (error) {
+        const rateLimitMessage = error.code === 'over_email_send_rate_limit'
+          || error.message?.toLowerCase().includes('email rate limit');
+        return {
+          success: false,
+          message: rateLimitMessage
+            ? 'Supabase limite temporairement les emails de confirmation. Attendez quelques minutes avant de réessayer, ou désactivez la confirmation email dans Authentication > Providers > Email pour les tests.'
+            : error.message
+        };
+      }
       if (!data.user) return { success: false, message: 'Vérifiez votre adresse email pour activer le compte.' };
       if (!data.session) {
         return {

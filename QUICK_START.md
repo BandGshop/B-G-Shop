@@ -40,6 +40,12 @@ Dans [js/supabase-client.js](js/supabase-client.js), remplacez `YOUR_PROJECT_REF
 
 Le site charge désormais les données depuis Supabase et utilise Supabase Auth pour les connexions et inscriptions. `localStorage` sert seulement de cache de compatibilité hors ligne; la source distante et les écritures sont Supabase.
 
+### Confirmation email et limite d'envoi
+
+Pour un test sans email de confirmation, ouvrez **Authentication > Providers > Email** dans Supabase et désactivez **Confirm email**, puis réessayez avec une adresse qui n'a pas déjà été créée. Cela évite la limite du service d'emails intégré.
+
+Pour un site en production, gardez la confirmation email activée et configurez un fournisseur SMTP dans **Project Settings > Authentication > SMTP Settings**. Le fournisseur email intégré de Supabase est limité et peut afficher `email rate limit exceeded` après plusieurs essais rapprochés. Attendez la remise à zéro de la limite avant de renvoyer une inscription.
+
 ### QR code du site
 
 Le QR code du site est disponible dans [images/bgshop-qr.png](images/bgshop-qr.png). Il ouvre directement : `https://bandgshop.github.io/B-G-Shop/`.

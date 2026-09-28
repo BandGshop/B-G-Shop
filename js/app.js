@@ -1,4 +1,144 @@
 // ===== SYSTEM DATA MANAGEMENT =====
+const interfacePhrases = [
+  ['Accueil', 'Home', 'Inicio', 'Главная', 'Início', 'Startseite', '首页'],
+  ['Catégories', 'Categories', 'Categorías', 'Категории', 'Categorias', 'Kategorien', '分类'],
+  ['Vidéos', 'Videos', 'Vídeos', 'Видео', 'Vídeos', 'Videos', '视频'],
+  ['Messages', 'Messages', 'Mensajes', 'Сообщения', 'Mensagens', 'Nachrichten', '消息'],
+  ['Paramètres', 'Settings', 'Configuración', 'Настройки', 'Configurações', 'Einstellungen', '设置'],
+  ['Panier', 'Cart', 'Carrito', 'Корзина', 'Carrinho', 'Warenkorb', '购物车'],
+  ['Réel', 'Reels', 'Reels', 'Видео', 'Reels', 'Reels', '短视频'],
+  ['Navigation principale', 'Main navigation', 'Navegación principal', 'Главная навигация', 'Navegação principal', 'Hauptnavigation', '主导航'],
+  ['Connexion', 'Sign in', 'Iniciar sesión', 'Войти', 'Entrar', 'Anmelden', '登录'],
+  ['Se connecter', 'Sign in', 'Iniciar sesión', 'Войти', 'Entrar', 'Anmelden', '登录'],
+  ['Déconnexion', 'Sign out', 'Cerrar sesión', 'Выйти', 'Sair', 'Abmelden', '退出登录'],
+  ['S’inscrire', 'Sign up', 'Registrarse', 'Зарегистрироваться', 'Cadastrar-se', 'Registrieren', '注册'],
+  ['Nos catégories', 'Our categories', 'Nuestras categorías', 'Наши категории', 'Nossas categorias', 'Unsere Kategorien', '商品分类'],
+  ['Parcourez nos produits par catégorie', 'Browse products by category', 'Explora nuestros productos por categoría', 'Просматривайте товары по категориям', 'Explore nossos produtos por categoria', 'Produkte nach Kategorie durchsuchen', '按类别浏览商品'],
+  ['Tous les produits', 'All products', 'Todos los productos', 'Все товары', 'Todos os produtos', 'Alle Produkte', '所有商品'],
+  ['Aucun produit trouvé dans cette catégorie pour le moment.', 'No products found in this category yet.', 'Aún no hay productos en esta categoría.', 'В этой категории пока нет товаров.', 'Ainda não há produtos nesta categoria.', 'In dieser Kategorie wurden noch keine Produkte gefunden.', '此分类暂无商品。'],
+  ['La marketplace qui vous rapproche', 'The marketplace that brings you closer', 'El mercado que te acerca', 'Маркетплейс, который сближает', 'O marketplace que aproxima você', 'Der Marktplatz, der verbindet', '让你更亲近的购物平台'],
+  ['Trouvez votre prochain coup de cœur.', 'Find your next favorite thing.', 'Encuentra tu próximo favorito.', 'Найдите то, что вам понравится.', 'Encontre seu próximo favorito.', 'Finde deinen nächsten Favoriten.', '发现你的心仪好物。'],
+  ['Des articles sélectionnés près de chez vous, des vendeurs passionnés et de nouvelles trouvailles chaque jour.', 'Curated items near you, passionate sellers, and new finds every day.', 'Artículos seleccionados cerca de ti, vendedores apasionados y nuevos descubrimientos cada día.', 'Товары рядом с вами, увлечённые продавцы и новые находки каждый день.', 'Produtos selecionados perto de você, vendedores apaixonados e novas descobertas todos os dias.', 'Ausgewählte Artikel in deiner Nähe, engagierte Verkäufer und täglich neue Entdeckungen.', '精选附近好物、热情卖家，每天都有新发现。'],
+  ['Pays ou ville', 'Country or city', 'País o ciudad', 'Страна или город', 'País ou cidade', 'Land oder Stadt', '国家或城市'],
+  ['Rechercher un pays ou une ville', 'Search for a country or city', 'Buscar un país o ciudad', 'Поиск страны или города', 'Buscar país ou cidade', 'Land oder Stadt suchen', '搜索国家或城市'],
+  ['Que recherchez-vous ?', 'What are you looking for?', '¿Qué estás buscando?', 'Что вы ищете?', 'O que você está procurando?', 'Wonach suchst du?', '你在寻找什么？'],
+  ['Rechercher un article', 'Search for an item', 'Buscar un artículo', 'Поиск товара', 'Buscar um produto', 'Artikel suchen', '搜索商品'],
+  ['Sélection B&G', 'B&G picks', 'Selección B&G', 'Выбор B&G', 'Seleção B&G', 'B&G-Auswahl', 'B&G精选'],
+  ['Articles tendances', 'Trending items', 'Productos populares', 'Популярные товары', 'Produtos em alta', 'Beliebte Artikel', '热门商品'],
+  ['Ajouter', 'Add', 'Añadir', 'Добавить', 'Adicionar', 'Hinzufügen', '添加'],
+  ['Aucun article ne correspond à votre recherche.', 'No items match your search.', 'Ningún artículo coincide con tu búsqueda.', 'По вашему запросу ничего не найдено.', 'Nenhum produto corresponde à sua busca.', 'Keine Artikel für deine Suche gefunden.', '没有符合搜索条件的商品。'],
+  ['Explorer', 'Explore', 'Explorar', 'Обзор', 'Explorar', 'Entdecken', '探索'],
+  ['Votre espace', 'Your account', 'Tu espacio', 'Ваш профиль', 'Sua área', 'Dein Bereich', '个人中心'],
+  ['Toutes les catégories', 'All categories', 'Todas las categorías', 'Все категории', 'Todas as categorias', 'Alle Kategorien', '所有分类'],
+  ['Mon panier', 'My cart', 'Mi carrito', 'Моя корзина', 'Meu carrinho', 'Mein Warenkorb', '我的购物车'],
+  ['Tous droits réservés.', 'All rights reserved.', 'Todos los derechos reservados.', 'Все права защищены.', 'Todos os direitos reservados.', 'Alle Rechte vorbehalten.', '版权所有。'],
+  ['Nos vidéos', 'Our videos', 'Nuestros vídeos', 'Наши видео', 'Nossos vídeos', 'Unsere Videos', '精选视频'],
+  ['Découvrez les dernières vidéos publiées par B&G Shop.', 'Discover the latest videos published by B&G Shop.', 'Descubre los últimos vídeos publicados por B&G Shop.', 'Смотрите последние видео B&G Shop.', 'Confira os vídeos mais recentes publicados pela B&G Shop.', 'Entdecke die neuesten Videos von B&G Shop.', '查看 B&G Shop 最新发布的视频。'],
+  ['Aucune vidéo publiée pour le moment.', 'No videos published yet.', 'Aún no se han publicado vídeos.', 'Видео пока не опубликованы.', 'Nenhum vídeo publicado ainda.', 'Noch keine Videos veröffentlicht.', '暂时没有发布视频。'],
+  ['Commentaires', 'Comments', 'Comentarios', 'Комментарии', 'Comentários', 'Kommentare', '评论'],
+  ['J’aime', 'Like', 'Me gusta', 'Нравится', 'Curtir', 'Gefällt mir', '喜欢'],
+  ['Ajouter aux favoris', 'Add to favorites', 'Añadir a favoritos', 'В избранное', 'Adicionar aos favoritos', 'Zu Favoriten hinzufügen', '加入收藏'],
+  ['Passer la commande', 'Place order', 'Hacer el pedido', 'Оформить заказ', 'Fazer pedido', 'Bestellen', '下单'],
+  ['Ajouter un commentaire...', 'Add a comment...', 'Añadir un comentario...', 'Добавить комментарий...', 'Adicionar um comentário...', 'Kommentar hinzufügen...', '添加评论...'],
+  ['Publier', 'Post', 'Publicar', 'Опубликовать', 'Publicar', 'Veröffentlichen', '发布'],
+  ['Aucun commentaire pour le moment.', 'No comments yet.', 'Aún no hay comentarios.', 'Комментариев пока нет.', 'Ainda não há comentários.', 'Noch keine Kommentare.', '暂无评论。'],
+  ['Messagerie', 'Messages', 'Mensajería', 'Сообщения', 'Mensagens', 'Nachrichten', '消息'],
+  ['Échangez directement avec l’équipe B&G Shop.', 'Chat directly with the B&G Shop team.', 'Habla directamente con el equipo de B&G Shop.', 'Общайтесь напрямую с командой B&G Shop.', 'Converse diretamente com a equipe B&G Shop.', 'Schreibe direkt mit dem B&G-Shop-Team.', '与 B&G Shop 团队直接交流。'],
+  ['Discussions', 'Conversations', 'Conversaciones', 'Диалоги', 'Conversas', 'Unterhaltungen', '对话'],
+  ['Vous devez être connecté pour accéder à votre messagerie.', 'You must be signed in to access your messages.', 'Debes iniciar sesión para acceder a tus mensajes.', 'Войдите, чтобы просматривать сообщения.', 'Entre na sua conta para acessar suas mensagens.', 'Melde dich an, um deine Nachrichten aufzurufen.', '登录后即可查看消息。'],
+  ['Écrivez votre message...', 'Write your message...', 'Escribe tu mensaje...', 'Введите сообщение...', 'Escreva sua mensagem...', 'Nachricht schreiben...', '输入消息...'],
+  ['Envoyer', 'Send', 'Enviar', 'Отправить', 'Enviar', 'Senden', '发送'],
+  ['Aucune discussion pour le moment.', 'No conversations yet.', 'Aún no hay conversaciones.', 'Диалогов пока нет.', 'Ainda não há conversas.', 'Noch keine Unterhaltungen.', '暂无对话。'],
+  ['Aucun message envoyé', 'No messages sent', 'No se han enviado mensajes', 'Сообщений пока нет', 'Nenhuma mensagem enviada', 'Noch keine Nachrichten gesendet', '尚未发送消息'],
+  ['Discussion avec B&G Shop', 'Conversation with B&G Shop', 'Conversación con B&G Shop', 'Диалог с B&G Shop', 'Conversa com a B&G Shop', 'Unterhaltung mit B&G Shop', '与 B&G Shop 对话'],
+  ['Support client interne', 'Customer support', 'Atención al cliente', 'Поддержка клиентов', 'Atendimento ao cliente', 'Kundenservice', '客户支持'],
+  ['Bienvenue dans la messagerie', 'Welcome to messages', 'Te damos la bienvenida a mensajería', 'Добро пожаловать в сообщения', 'Bem-vindo às mensagens', 'Willkommen bei den Nachrichten', '欢迎使用消息功能'],
+  ['Sélectionnez une discussion à gauche pour répondre.', 'Select a conversation on the left to reply.', 'Selecciona una conversación a la izquierda para responder.', 'Выберите диалог слева, чтобы ответить.', 'Selecione uma conversa à esquerda para responder.', 'Wähle links eine Unterhaltung aus, um zu antworten.', '选择左侧对话并回复。'],
+  ['Aucune discussion sélectionnée.', 'No conversation selected.', 'No hay ninguna conversación seleccionada.', 'Диалог не выбран.', 'Nenhuma conversa selecionada.', 'Keine Unterhaltung ausgewählt.', '未选择对话。'],
+  ['Votre sélection', 'Your selection', 'Tu selección', 'Ваша подборка', 'Sua seleção', 'Deine Auswahl', '你的选择'],
+  ['Total', 'Total', 'Total', 'Итого', 'Total', 'Gesamt', '合计'],
+  ['Confirmer l’achat', 'Confirm purchase', 'Confirmar compra', 'Подтвердить покупку', 'Confirmar compra', 'Kauf bestätigen', '确认购买'],
+  ['Votre panier est vide.', 'Your cart is empty.', 'Tu carrito está vacío.', 'Корзина пуста.', 'Seu carrinho está vazio.', 'Dein Warenkorb ist leer.', '购物车为空。'],
+  ['Retirer', 'Remove', 'Quitar', 'Удалить', 'Remover', 'Entfernen', '移除'],
+  ['Détails du produit', 'Product details', 'Detalles del producto', 'Информация о товаре', 'Detalhes do produto', 'Produktdetails', '商品详情'],
+  ['Articles similaires', 'Similar items', 'Artículos similares', 'Похожие товары', 'Produtos semelhantes', 'Ähnliche Artikel', '相似商品'],
+  ['Nom complet *', 'Full name *', 'Nombre completo *', 'Полное имя *', 'Nome completo *', 'Vollständiger Name *', '姓名 *'],
+  ['Numéro de téléphone *', 'Phone number *', 'Número de teléfono *', 'Номер телефона *', 'Número de telefone *', 'Telefonnummer *', '电话号码 *'],
+  ['Adresse de livraison *', 'Delivery address *', 'Dirección de entrega *', 'Адрес доставки *', 'Endereço de entrega *', 'Lieferadresse *', '收货地址 *'],
+  ['Mode de paiement *', 'Payment method *', 'Método de pago *', 'Способ оплаты *', 'Forma de pagamento *', 'Zahlungsart *', '付款方式 *'],
+  ['Paiement à la livraison', 'Cash on delivery', 'Pago contra entrega', 'Оплата при получении', 'Pagamento na entrega', 'Barzahlung bei Lieferung', '货到付款'],
+  ['Vous payerez à la livraison', 'You will pay upon delivery', 'Pagarás al recibirlo', 'Оплата при доставке', 'Você pagará na entrega', 'Du zahlst bei Lieferung', '送货时付款'],
+  ['Envoyer la commande', 'Submit order', 'Enviar pedido', 'Отправить заказ', 'Enviar pedido', 'Bestellung senden', '提交订单'],
+  ['Annuler', 'Cancel', 'Cancelar', 'Отмена', 'Cancelar', 'Abbrechen', '取消'],
+  ['Produit non trouvé', 'Product not found', 'Producto no encontrado', 'Товар не найден', 'Produto não encontrado', 'Produkt nicht gefunden', '未找到商品'],
+  ['Aucun article similaire', 'No similar items', 'No hay artículos similares', 'Похожих товаров нет', 'Nenhum produto semelhante', 'Keine ähnlichen Artikel', '没有相似商品'],
+  ['Appeler le support', 'Call support', 'Llamar a soporte', 'Позвонить в поддержку', 'Ligar para o suporte', 'Support anrufen', '联系支持'],
+  ['Contacter via WhatsApp', 'Contact via WhatsApp', 'Contactar por WhatsApp', 'Связаться через WhatsApp', 'Falar pelo WhatsApp', 'Per WhatsApp kontaktieren', '通过 WhatsApp 联系'],
+  ['Vous devez être connecté pour passer une commande.', 'You must be signed in to place an order.', 'Debes iniciar sesión para hacer un pedido.', 'Войдите, чтобы оформить заказ.', 'Entre na sua conta para fazer um pedido.', 'Melde dich an, um eine Bestellung aufzugeben.', '登录后即可下单。'],
+  ['Nom complet', 'Full name', 'Nombre completo', 'Полное имя', 'Nome completo', 'Vollständiger Name', '姓名'],
+  ['Téléphone', 'Phone', 'Teléfono', 'Телефон', 'Telefone', 'Telefon', '电话'],
+  ['Adresse de livraison', 'Delivery address', 'Dirección de entrega', 'Адрес доставки', 'Endereço de entrega', 'Lieferadresse', '收货地址'],
+  ['Afficher le mot de passe', 'Show password', 'Mostrar contraseña', 'Показать пароль', 'Mostrar senha', 'Passwort anzeigen', '显示密码'],
+  ['Mot de passe', 'Password', 'Contraseña', 'Пароль', 'Senha', 'Passwort', '密码'],
+  ['Photo de profil (facultatif)', 'Profile photo (optional)', 'Foto de perfil (opcional)', 'Фото профиля (необязательно)', 'Foto de perfil (opcional)', 'Profilbild (optional)', '头像（可选）'],
+  ['Tableau de bord', 'Dashboard', 'Panel de control', 'Панель управления', 'Painel', 'Dashboard', '管理面板'],
+  ['Ajouter un article', 'Add an item', 'Añadir un artículo', 'Добавить товар', 'Adicionar produto', 'Artikel hinzufügen', '添加商品'],
+  ['Gérer les articles', 'Manage items', 'Gestionar artículos', 'Управление товарами', 'Gerenciar produtos', 'Artikel verwalten', '管理商品'],
+  ['Commandes', 'Orders', 'Pedidos', 'Заказы', 'Pedidos', 'Bestellungen', '订单'],
+  ['Ajouter un nouvel article', 'Add a new item', 'Añadir un artículo nuevo', 'Добавить новый товар', 'Adicionar novo produto', 'Neuen Artikel hinzufügen', '添加新商品'],
+  ['Catégorie *', 'Category *', 'Categoría *', 'Категория *', 'Categoria *', 'Kategorie *', '分类 *'],
+  ['Prix (FCFA) *', 'Price (FCFA) *', 'Precio (FCFA) *', 'Цена (FCFA) *', 'Preço (FCFA) *', 'Preis (FCFA) *', '价格 (FCFA) *'],
+  ['Description *', 'Description *', 'Descripción *', 'Описание *', 'Descrição *', 'Beschreibung *', '商品描述 *'],
+  ['Réinitialiser', 'Reset', 'Restablecer', 'Сбросить', 'Redefinir', 'Zurücksetzen', '重置'],
+  ['Vidéos courtes', 'Short videos', 'Vídeos cortos', 'Короткие видео', 'Vídeos curtos', 'Kurzvideos', '短视频'],
+  ['Fichier vidéo *', 'Video file *', 'Archivo de vídeo *', 'Видеофайл *', 'Arquivo de vídeo *', 'Videodatei *', '视频文件 *'],
+  ['Publier la vidéo', 'Publish video', 'Publicar vídeo', 'Опубликовать видео', 'Publicar vídeo', 'Video veröffentlichen', '发布视频'],
+  ['Accès réservé aux administrateurs', 'Administrator access only', 'Acceso solo para administradores', 'Доступ только для администратора', 'Acesso restrito a administradores', 'Nur für Administratoren', '仅限管理员访问'],
+  ['Voir', 'View', 'Ver', 'Посмотреть', 'Ver', 'Ansehen', '查看'],
+  ['Modifier', 'Edit', 'Editar', 'Изменить', 'Editar', 'Bearbeiten', '编辑'],
+  ['Supprimer', 'Delete', 'Eliminar', 'Удалить', 'Excluir', 'Löschen', '删除']
+];
+const languageIndexes = { en: 1, es: 2, ru: 3, pt: 4, de: 5, zh: 6 };
+const interfaceTranslations = Object.fromEntries(Object.entries(languageIndexes).map(([language, index]) => [
+  language,
+  Object.fromEntries(interfacePhrases.map((phrase) => [phrase[0], phrase[index]]))
+]));
+let interfaceLanguage = 'fr';
+const originalTextNodes = new WeakMap();
+const originalAttributes = new WeakMap();
+
+function translateTextNode(node) {
+  if (!originalTextNodes.has(node)) originalTextNodes.set(node, node.nodeValue);
+  const source = originalTextNodes.get(node);
+  const phrase = source.trim();
+  const translated = interfaceTranslations[interfaceLanguage]?.[phrase];
+  if (translated) node.nodeValue = source.replace(phrase, translated);
+}
+
+function translateElement(element) {
+  if (element.nodeType !== Node.ELEMENT_NODE || ['SCRIPT', 'STYLE', 'NOSCRIPT'].includes(element.tagName)) return;
+  let originals = originalAttributes.get(element);
+  if (!originals) {
+    originals = new Map();
+    originalAttributes.set(element, originals);
+  }
+  for (const attribute of ['placeholder', 'title', 'aria-label', 'alt']) {
+    if (!element.hasAttribute(attribute)) continue;
+    if (!originals.has(attribute)) originals.set(attribute, element.getAttribute(attribute));
+    const source = originals.get(attribute);
+    const translated = interfaceTranslations[interfaceLanguage]?.[source.trim()];
+    if (translated) element.setAttribute(attribute, source.replace(source.trim(), translated));
+  }
+  const walker = document.createTreeWalker(element, NodeFilter.SHOW_TEXT);
+  while (walker.nextNode()) translateTextNode(walker.currentNode);
+}
+
+function applySiteLanguage(language) {
+  interfaceLanguage = languageIndexes[language] ? language : 'fr';
+  document.documentElement.lang = interfaceLanguage;
+  translateElement(document.body);
+}
+
 const app = {
   // Initialize app data
   init() {
@@ -394,7 +534,9 @@ const app = {
   async saveUserSettings(userEmail, settings) {
     if (!userEmail) return;
     localStorage.setItem(`bgshop_settings_${userEmail}`, JSON.stringify(settings));
+    localStorage.setItem('bgshop_language', settings.language || 'fr');
     this.applyUserSettings(settings);
+    applySiteLanguage(settings.language || 'fr');
     const user = this.checkAuth();
     const client = window.bgSupabase?.getClient();
     if (client && user?.id) {
@@ -1045,6 +1187,18 @@ document.addEventListener('DOMContentLoaded', () => {
   app.init();
   const user = app.checkAuth();
   if (user) app.applyUserSettings(app.getUserSettings(user.email));
+  applySiteLanguage(user ? app.getUserSettings(user.email).language : localStorage.getItem('bgshop_language') || 'fr');
+  const languageObserver = new MutationObserver((mutations) => {
+    for (const mutation of mutations) {
+      if (mutation.type === 'characterData') translateTextNode(mutation.target);
+      for (const node of mutation.addedNodes || []) {
+        if (node.nodeType === Node.TEXT_NODE) translateTextNode(node);
+        else if (node.nodeType === Node.ELEMENT_NODE) translateElement(node);
+      }
+      if (mutation.type === 'attributes') translateElement(mutation.target);
+    }
+  });
+  languageObserver.observe(document.body, { childList: true, subtree: true, characterData: true, attributes: true, attributeFilter: ['placeholder', 'title', 'aria-label', 'alt'] });
   enhanceNavigation();
   renderAdvertisingBar();
   updateAuthUI();

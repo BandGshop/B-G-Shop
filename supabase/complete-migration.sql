@@ -31,6 +31,8 @@ create table if not exists public.payment_numbers (
 
 alter table public.orders add column if not exists payment_method public.payment_method not null default 'cash_on_delivery';
 alter table public.orders add column if not exists payment_proof text;
+drop policy if exists orders_delete_admin on public.orders;
+create policy orders_delete_admin on public.orders for delete to authenticated using (public.is_admin());
 alter table public.payment_numbers enable row level security;
 drop policy if exists payment_numbers_read_public on public.payment_numbers;
 create policy payment_numbers_read_public on public.payment_numbers for select using (true);

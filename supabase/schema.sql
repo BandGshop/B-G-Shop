@@ -256,6 +256,8 @@ create policy orders_select_owner_or_admin on public.orders
 for select to authenticated using (customer_id = auth.uid() or public.is_admin());
 create policy orders_update_admin on public.orders
 for update to authenticated using (public.is_admin()) with check (public.is_admin());
+create policy orders_delete_admin on public.orders
+for delete to authenticated using (public.is_admin());
 
 create policy payment_numbers_read_public on public.payment_numbers
 for select using (true);

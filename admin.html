@@ -853,6 +853,7 @@
                     }')" class="btn btn-primaire" style="padding: 0.4rem 0.8rem; font-size: 0.85rem;">
                 ${order.status === "pending" ? "Complétée" : "Attente"}
               </button>
+                            ${order.status === "completed" ? `<button onclick="deleteCompletedOrder(${order.id})" class="btn btn-secondaire" style="padding: 0.4rem 0.8rem; font-size: 0.85rem; margin-left: 0.4rem;">Supprimer</button>` : ""}
             </td>
           </tr>
         `
@@ -1013,6 +1014,17 @@
                     loadDashboard();
                 } catch (error) {
                     alert(error.message || "Impossible de mettre à jour la commande.");
+                }
+            }
+
+            async function deleteCompletedOrder(orderId) {
+                if (!confirm("Supprimer définitivement cette commande complétée ?")) return;
+                try {
+                    await app.deleteCompletedOrder(orderId);
+                    loadOrders();
+                    loadDashboard();
+                } catch (error) {
+                    alert(error.message || "Impossible de supprimer la commande.");
                 }
             }
 

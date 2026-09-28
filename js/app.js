@@ -1223,6 +1223,26 @@ const app = {
     localStorage.setItem('bgshop_orders', JSON.stringify(orders));
   },
 
+  async deleteCompletedOrder(orderId) {
+    const orders = this.getOrders();
+    const order = orders.find((item) => String(item.id) === String(orderId));
+    if (!order || order.status !== 'completed') {
+      throw new Error('Seules les commandes complétées peuvent être supprimées.');
+    }
+
+    const user = this.checkAuth();
+    if (!user || user.role !== 'admin') throw new Error('Seul un administrateur peut supprimer une commande.');
+
+    const client = window.bgSupabase?.getClient();
+    if (client) {
+      const { data, error } = await client.from('orders').delete().eq('id', orderId).eq('status', 'completed').select('id');
+      if (error) throw new Error(`Impossible de supprimer la commande : ${error.message}`);
+      if (!data?.length) throw new Error('La commande n’est plus complétée ou a déjà été supprimée.');
+    }
+
+    localStorage.setItem('bgshop_orders', JSON.stringify(orders.filter((item) => String(item.id) !== String(orderId))));
+  },
+
   async changeAdminPassword(email, currentPassword, newPassword) {
     const client = window.bgSupabase?.getClient();
     if (client) {

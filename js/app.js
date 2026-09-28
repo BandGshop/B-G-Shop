@@ -150,8 +150,6 @@ const app = {
   ensureDefaultData() {
     const localUsers = JSON.parse(localStorage.getItem('bgshop_users') || '[]');
     localStorage.setItem('bgshop_users', JSON.stringify(localUsers.filter((user) => user.email !== 'admin@bgshop.com')));
-    const currentUser = JSON.parse(localStorage.getItem('bgshop_currentUser') || 'null');
-    if (currentUser?.email === 'admin@bgshop.com') localStorage.removeItem('bgshop_currentUser');
 
     if (localStorage.getItem('bgshop_products')) {
       const products = JSON.parse(localStorage.getItem('bgshop_products'));

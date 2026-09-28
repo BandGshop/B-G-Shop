@@ -25,6 +25,8 @@ const interfacePhrases = [
   ['Rechercher un article', 'Search for an item', 'Buscar un artículo', 'Поиск товара', 'Buscar um produto', 'Artikel suchen', '搜索商品'],
   ['Sélection B&G', 'B&G picks', 'Selección B&G', 'Выбор B&G', 'Seleção B&G', 'B&G-Auswahl', 'B&G精选'],
   ['Articles tendances', 'Trending items', 'Productos populares', 'Популярные товары', 'Produtos em alta', 'Beliebte Artikel', '热门商品'],
+  ['article', 'item', 'artículo', 'товар', 'produto', 'Artikel', '件商品'],
+  ['articles', 'items', 'artículos', 'товаров', 'produtos', 'Artikel', '件商品'],
   ['Ajouter', 'Add', 'Añadir', 'Добавить', 'Adicionar', 'Hinzufügen', '添加'],
   ['Aucun article ne correspond à votre recherche.', 'No items match your search.', 'Ningún artículo coincide con tu búsqueda.', 'По вашему запросу ничего не найдено.', 'Nenhum produto corresponde à sua busca.', 'Keine Artikel für deine Suche gefunden.', '没有符合搜索条件的商品。'],
   ['Explorer', 'Explore', 'Explorar', 'Обзор', 'Explorar', 'Entdecken', '探索'],
@@ -81,6 +83,43 @@ const interfacePhrases = [
   ['Afficher le mot de passe', 'Show password', 'Mostrar contraseña', 'Показать пароль', 'Mostrar senha', 'Passwort anzeigen', '显示密码'],
   ['Mot de passe', 'Password', 'Contraseña', 'Пароль', 'Senha', 'Passwort', '密码'],
   ['Photo de profil (facultatif)', 'Profile photo (optional)', 'Foto de perfil (opcional)', 'Фото профиля (необязательно)', 'Foto de perfil (opcional)', 'Profilbild (optional)', '头像（可选）'],
+  ['S\'inscrire', 'Sign up', 'Registrarse', 'Зарегистрироваться', 'Cadastrar-se', 'Registrieren', '注册'],
+  ['Pas encore de compte?', 'Don’t have an account yet?', '¿Aún no tienes una cuenta?', 'Ещё нет аккаунта?', 'Ainda não tem uma conta?', 'Noch kein Konto?', '还没有账户？'],
+  ['Déjà inscrit?', 'Already registered?', '¿Ya tienes una cuenta?', 'Уже зарегистрированы?', 'Já tem uma conta?', 'Bereits registriert?', '已经注册？'],
+  ['Votre nom complet', 'Your full name', 'Tu nombre completo', 'Ваше полное имя', 'Seu nome completo', 'Dein vollständiger Name', '你的全名'],
+  ['exemple@email.com', 'example@email.com', 'ejemplo@email.com', 'пример@email.com', 'exemplo@email.com', 'beispiel@email.com', '示例@email.com'],
+  ['Veuillez remplir tous les champs', 'Please fill in all fields', 'Completa todos los campos', 'Заполните все поля', 'Preencha todos os campos', 'Bitte alle Felder ausfüllen', '请填写所有字段'],
+  ['L\'adresse mail invalide', 'Invalid email address', 'La dirección de correo no es válida', 'Неверный адрес электронной почты', 'Endereço de e-mail inválido', 'Ungültige E-Mail-Adresse', '邮箱地址无效'],
+  ['Le nom est requis', 'Name is required', 'El nombre es obligatorio', 'Требуется имя', 'O nome é obrigatório', 'Name ist erforderlich', '姓名为必填项'],
+  ['L\'email est requis', 'Email is required', 'El correo electrónico es obligatorio', 'Требуется электронная почта', 'O e-mail é obrigatório', 'E-Mail ist erforderlich', '邮箱为必填项'],
+  ['Le mot de passe doit contenir au moins 6 caractères', 'Password must be at least 6 characters', 'La contraseña debe tener al menos 6 caracteres', 'Пароль должен содержать не менее 6 символов', 'A senha deve ter pelo menos 6 caracteres', 'Das Passwort muss mindestens 6 Zeichen lang sein', '密码至少需要 6 个字符'],
+  ['Les mots de passe ne correspondent pas', 'Passwords do not match', 'Las contraseñas no coinciden', 'Пароли не совпадают', 'As senhas não coincidem', 'Passwörter stimmen nicht überein', '两次输入的密码不一致'],
+  ['Création du compte...', 'Creating account...', 'Creando cuenta...', 'Создание аккаунта...', 'Criando conta...', 'Konto wird erstellt...', '正在创建账户...'],
+  ['Email ou mot de passe incorrect', 'Incorrect email or password', 'Correo o contraseña incorrectos', 'Неверный адрес или пароль', 'E-mail ou senha incorretos', 'E-Mail oder Passwort falsch', '邮箱或密码错误'],
+  ['Vérifiez votre adresse email pour activer le compte.', 'Check your email to activate your account.', 'Revisa tu correo para activar la cuenta.', 'Проверьте почту, чтобы активировать аккаунт.', 'Verifique seu e-mail para ativar a conta.', 'Prüfe deine E-Mail, um dein Konto zu aktivieren.', '请查收邮件以激活账户。'],
+  ['Compte créé. Consultez votre boîte mail et confirmez votre adresse avant de vous connecter.', 'Account created. Check your inbox and confirm your address before signing in.', 'Cuenta creada. Revisa tu correo y confirma tu dirección antes de iniciar sesión.', 'Аккаунт создан. Подтвердите адрес в письме перед входом.', 'Conta criada. Confirme seu endereço pelo e-mail antes de entrar.', 'Konto erstellt. Bestätige deine E-Mail-Adresse vor der Anmeldung.', '账户已创建。请先查收邮件并确认地址，然后登录。'],
+  ['Email déjà utilisé', 'Email already in use', 'Correo electrónico ya utilizado', 'Электронная почта уже используется', 'E-mail já está em uso', 'E-Mail bereits vergeben', '邮箱已被使用'],
+  ['Enregistrer', 'Save', 'Guardar', 'Сохранить', 'Guardar', 'Speichern', '保存'],
+  ['Préférences enregistrées.', 'Preferences saved.', 'Preferencias guardadas.', 'Настройки сохранены.', 'Preferências salvas.', 'Einstellungen gespeichert.', '偏好设置已保存。'],
+  ['Votre panier est vide.', 'Your cart is empty.', 'Tu carrito está vacío.', 'Корзина пуста.', 'Seu carrinho está vazio.', 'Dein Warenkorb ist leer.', '购物车为空。'],
+  ['Aucun message pour le moment. Envoyez votre premier message ci-dessous.', 'No messages yet. Send your first message below.', 'Aún no hay mensajes. Envía el primero a continuación.', 'Сообщений пока нет. Отправьте первое сообщение ниже.', 'Ainda não há mensagens. Envie a primeira abaixo.', 'Noch keine Nachrichten. Sende unten deine erste Nachricht.', '暂无消息，请在下方发送第一条消息。'],
+  ['Aucun numéro MTN n\'est disponible pour le moment. Choisissez le paiement à la livraison.', 'No MTN number is available right now. Choose cash on delivery.', 'No hay ningún número MTN disponible. Elige pagar contra entrega.', 'Номер MTN пока недоступен. Выберите оплату при получении.', 'Nenhum número MTN disponível. Escolha pagamento na entrega.', 'Derzeit ist keine MTN-Nummer verfügbar. Wähle Barzahlung bei Lieferung.', '目前没有可用的 MTN 号码，请选择货到付款。'],
+  ['Numéro de dépôt en cours de chargement...', 'Loading deposit number...', 'Cargando número de depósito...', 'Загрузка номера для перевода...', 'Carregando número para depósito...', 'Einzahlungsnummer wird geladen...', '正在加载存款号码...'],
+  ['Aucune notification.', 'No notifications.', 'No hay notificaciones.', 'Нет уведомлений.', 'Nenhuma notificação.', 'Keine Benachrichtigungen.', '暂无通知。'],
+  ['Aucune commande.', 'No orders.', 'No hay pedidos.', 'Заказов нет.', 'Nenhum pedido.', 'Keine Bestellungen.', '暂无订单。'],
+  ['Aucun contenu pour le moment.', 'No content yet.', 'Aún no hay contenido.', 'Пока нет содержимого.', 'Ainda não há conteúdo.', 'Noch keine Inhalte.', '暂无内容。'],
+  ['Gestion de la barre de publicité', 'Manage ad banner', 'Administrar la barra publicitaria', 'Управление рекламной панелью', 'Gerenciar a faixa de anúncios', 'Werbebanner verwalten', '管理广告栏'],
+  ['Sélectionnez plusieurs vidéos. Elles seront lues automatiquement l\'une après l\'autre, sans son.', 'Select multiple videos. They will play automatically one after another, without sound.', 'Selecciona varios vídeos. Se reproducirán automáticamente uno tras otro, sin sonido.', 'Выберите несколько видео. Они будут воспроизводиться по очереди без звука.', 'Selecione vários vídeos. Eles serão reproduzidos em sequência, sem som.', 'Wähle mehrere Videos aus. Sie werden nacheinander ohne Ton abgespielt.', '选择多个视频，它们将自动依次播放且不带声音。'],
+  ['Importer des vidéos publicitaires', 'Import ad videos', 'Importar vídeos publicitarios', 'Загрузить рекламные видео', 'Importar vídeos publicitários', 'Werbevideos importieren', '导入广告视频'],
+  ['Importer les vidéos', 'Import videos', 'Importar vídeos', 'Загрузить видео', 'Importar vídeos', 'Videos importieren', '导入视频'],
+  ['Enregistrer la sélection publicitaire', 'Save ad selection', 'Guardar selección publicitaria', 'Сохранить выбор рекламы', 'Salvar seleção de anúncios', 'Werbeauswahl speichern', '保存广告选择'],
+  ['Changer le mot de passe admin', 'Change admin password', 'Cambiar contraseña de administrador', 'Изменить пароль администратора', 'Alterar senha do administrador', 'Admin-Passwort ändern', '更改管理员密码'],
+  ['Notifier tous les utilisateurs', 'Notify all users', 'Notificar a todos los usuarios', 'Уведомить всех пользователей', 'Notificar todos os usuários', 'Alle Benutzer benachrichtigen', '通知所有用户'],
+  ['Envoyer la notification', 'Send notification', 'Enviar notificación', 'Отправить уведомление', 'Enviar notificação', 'Benachrichtigung senden', '发送通知'],
+  ['Demandes envoyées par les utilisateurs.', 'Requests sent by users.', 'Solicitudes enviadas por los usuarios.', 'Запросы пользователей.', 'Solicitações enviadas pelos usuários.', 'Anfragen von Benutzern.', '用户提交的请求。'],
+  ['Arrière-plan du site', 'Site background', 'Fondo del sitio', 'Фон сайта', 'Fundo do site', 'Website-Hintergrund', '网站背景'],
+  ['Arrière-plan de la messagerie', 'Messaging background', 'Fondo de mensajes', 'Фон сообщений', 'Fundo das mensagens', 'Nachrichtenhintergrund', '消息背景'],
+  ['Langue du site', 'Site language', 'Idioma del sitio', 'Язык сайта', 'Idioma do site', 'Website-Sprache', '网站语言'],
   ['Tableau de bord', 'Dashboard', 'Panel de control', 'Панель управления', 'Painel', 'Dashboard', '管理面板'],
   ['Ajouter un article', 'Add an item', 'Añadir un artículo', 'Добавить товар', 'Adicionar produto', 'Artikel hinzufügen', '添加商品'],
   ['Gérer les articles', 'Manage items', 'Gestionar artículos', 'Управление товарами', 'Gerenciar produtos', 'Artikel verwalten', '管理商品'],
@@ -111,26 +150,37 @@ function translateTextNode(node) {
   if (!originalTextNodes.has(node)) originalTextNodes.set(node, node.nodeValue);
   const source = originalTextNodes.get(node);
   const phrase = source.trim();
-  const translated = interfaceTranslations[interfaceLanguage]?.[phrase];
-  if (translated) node.nodeValue = source.replace(phrase, translated);
+  const count = phrase.match(/^(\d+)\s+(articles?)$/);
+  const translated = count
+    ? `${count[1]} ${interfaceTranslations[interfaceLanguage]?.[count[2]] || count[2]}`
+    : interfaceTranslations[interfaceLanguage]?.[phrase];
+  const localizedValue = translated ? source.replace(phrase, translated) : interfaceLanguage === 'fr' ? source : node.nodeValue;
+  if (node.nodeValue !== localizedValue) node.nodeValue = localizedValue;
 }
 
 function translateElement(element) {
   if (element.nodeType !== Node.ELEMENT_NODE || ['SCRIPT', 'STYLE', 'NOSCRIPT'].includes(element.tagName)) return;
-  let originals = originalAttributes.get(element);
-  if (!originals) {
-    originals = new Map();
-    originalAttributes.set(element, originals);
+  const translateAttributes = (target) => {
+    let originals = originalAttributes.get(target);
+    if (!originals) {
+      originals = new Map();
+      originalAttributes.set(target, originals);
+    }
+    for (const attribute of ['placeholder', 'title', 'aria-label', 'alt']) {
+      if (!target.hasAttribute(attribute)) continue;
+      if (!originals.has(attribute)) originals.set(attribute, target.getAttribute(attribute));
+      const source = originals.get(attribute);
+      const translated = interfaceTranslations[interfaceLanguage]?.[source.trim()];
+      const localizedValue = translated ? source.replace(source.trim(), translated) : interfaceLanguage === 'fr' ? source : target.getAttribute(attribute);
+      if (target.getAttribute(attribute) !== localizedValue) target.setAttribute(attribute, localizedValue);
+    }
+  };
+  translateAttributes(element);
+  const walker = document.createTreeWalker(element, NodeFilter.SHOW_ELEMENT | NodeFilter.SHOW_TEXT);
+  while (walker.nextNode()) {
+    if (walker.currentNode.nodeType === Node.ELEMENT_NODE) translateAttributes(walker.currentNode);
+    else translateTextNode(walker.currentNode);
   }
-  for (const attribute of ['placeholder', 'title', 'aria-label', 'alt']) {
-    if (!element.hasAttribute(attribute)) continue;
-    if (!originals.has(attribute)) originals.set(attribute, element.getAttribute(attribute));
-    const source = originals.get(attribute);
-    const translated = interfaceTranslations[interfaceLanguage]?.[source.trim()];
-    if (translated) element.setAttribute(attribute, source.replace(source.trim(), translated));
-  }
-  const walker = document.createTreeWalker(element, NodeFilter.SHOW_TEXT);
-  while (walker.nextNode()) translateTextNode(walker.currentNode);
 }
 
 function applySiteLanguage(language) {

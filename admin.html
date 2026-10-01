@@ -307,6 +307,14 @@
                 font-weight: 600;
             }
 
+            .users-table-wrap {
+                overflow-x: auto;
+            }
+
+            .users-table {
+                min-width: 560px;
+            }
+
             .status-badge {
                 display: inline-block;
                 padding: 0.3rem 0.8rem;
@@ -405,6 +413,7 @@
                 <button class="nav-btn" onclick="switchSection('add-product', this)">Ajouter un article</button>
                 <button class="nav-btn" onclick="switchSection('manage-products', this)">Gérer les articles</button>
                 <button class="nav-btn" onclick="switchSection('orders', this)">Commandes</button>
+                <button class="nav-btn" onclick="switchSection('users', this)">Comptes utilisateurs</button>
                 <button class="nav-btn" onclick="switchSection('payment-numbers', this)">Numéros MTN</button>
                 <button class="nav-btn" onclick="switchSection('videos', this)">Vidéos</button>
                 <button class="nav-btn" onclick="window.location.href='messages.html'">Messages</button>
@@ -557,6 +566,27 @@
                     </table>
                 </div>
 
+                <div id="users" class="admin-section">
+                    <div class="admin-header">
+                        <h1>Comptes utilisateurs</h1>
+                        <button class="btn btn-secondaire" type="button" onclick="loadUsers()">Actualiser</button>
+                    </div>
+                    <p id="users-count" style="color: var(--texte-secondaire)"></p>
+                    <div class="users-table-wrap">
+                        <table class="orders-table users-table">
+                            <thead>
+                                <tr>
+                                    <th>Nom</th>
+                                    <th>Adresse e-mail</th>
+                                    <th>Rôle</th>
+                                    <th>Créé le</th>
+                                </tr>
+                            </thead>
+                            <tbody id="users-tbody"></tbody>
+                        </table>
+                    </div>
+                </div>
+
                 <div id="payment-numbers" class="admin-section">
                     <div class="admin-header"><h1>Numéros MTN Mobile Money</h1></div>
                     <div class="form-card">
@@ -677,6 +707,7 @@
                 if (sectionId === "dashboard") loadDashboard();
                 if (sectionId === "manage-products") loadProductsList();
                 if (sectionId === "orders") loadOrders();
+                if (sectionId === "users") loadUsers();
                 if (sectionId === "payment-numbers") loadPaymentNumbers();
                 if (sectionId === "videos") loadVideoManagement();
             }
@@ -859,6 +890,60 @@
         `
                 )
                 .join("");
+            }
+
+            function escapeHtml(value) {
+                return String(value ?? "").replace(/[&<>"']/g, (character) => ({
+                    "&": "&amp;",
+                    "<": "&lt;",
+                    ">": "&gt;",
+                    '"': "&quot;",
+                    "'": "&#39;"
+                })[character]);
+            }
+
+            async function loadUsers() {
+                const tbody = document.getElementById("users-tbody");
+                const count = document.getElementById("users-count");
+                tbody.innerHTML = '<tr><td colspan="4" style="text-align: center; padding: 2rem; color: var(--texte-secondaire);">Chargement des comptes…</td></tr>';
+                count.textContent = "";
+
+                try {
+                    const client = window.bgSupabase?.getClient();
+                    let users;
+                    if (client) {
+                        const { data, error } = await client
+                            .from("profiles")
+                            .select("id, email, name, role, created_at")
+                            .order("created_at", { ascending: false });
+                        if (error) throw error;
+                        users = data || [];
+                    } else {
+                        users = JSON.parse(localStorage.getItem("bgshop_users") || "[]");
+                    }
+
+                    count.textContent = `${users.length} compte${users.length > 1 ? "s" : ""}`;
+                    if (!users.length) {
+                        tbody.innerHTML = '<tr><td colspan="4" style="text-align: center; padding: 2rem; color: var(--texte-secondaire);">Aucun compte utilisateur trouvé.</td></tr>';
+                        return;
+                    }
+
+                    tbody.innerHTML = users.map((user) => {
+                        const createdAt = user.created_at || user.createdAt;
+                        const date = createdAt && !Number.isNaN(new Date(createdAt).getTime())
+                            ? new Date(createdAt).toLocaleDateString("fr-FR")
+                            : "—";
+                        return `<tr>
+                            <td>${escapeHtml(user.name)}</td>
+                            <td>${escapeHtml(user.email)}</td>
+                            <td>${user.role === "admin" ? "Administrateur" : "Utilisateur"}</td>
+                            <td>${date}</td>
+                        </tr>`;
+                    }).join("");
+                } catch (error) {
+                    count.textContent = "";
+                    tbody.innerHTML = `<tr><td colspan="4" style="text-align: center; padding: 2rem; color: #ff8f9b;">${escapeHtml(error.message || "Impossible de charger les comptes.")}</td></tr>`;
+                }
             }
 
             async function loadPaymentNumbers() {

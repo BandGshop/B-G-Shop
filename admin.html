@@ -414,6 +414,7 @@
                 <button class="nav-btn" onclick="switchSection('manage-products', this)">Gérer les articles</button>
                 <button class="nav-btn" onclick="switchSection('orders', this)">Commandes</button>
                 <button class="nav-btn" onclick="switchSection('users', this)">Comptes utilisateurs</button>
+                <button class="nav-btn" onclick="switchSection('promo-codes', this)">Codes promo</button>
                 <button class="nav-btn" onclick="switchSection('payment-numbers', this)">Numéros MTN</button>
                 <button class="nav-btn" onclick="switchSection('videos', this)">Vidéos</button>
                 <button class="nav-btn" onclick="window.location.href='messages.html'">Messages</button>
@@ -587,6 +588,44 @@
                     </div>
                 </div>
 
+                <div id="promo-codes" class="admin-section">
+                    <div class="admin-header">
+                        <h1>Codes promo</h1>
+                    </div>
+
+                    <div class="form-card">
+                        <h2>Ajouter un code partenaire</h2>
+                        <form onsubmit="addPromoCode(event)">
+                            <div class="form-group">
+                                <label for="promo-code-name">Nom du partenaire *</label>
+                                <input id="promo-code-name" type="text" required placeholder="Maya, Koffi, etc." />
+                            </div>
+                            <div class="form-group">
+                                <label for="promo-code-value">Code promo *</label>
+                                <input id="promo-code-value" type="text" required placeholder="MAYA10" style="text-transform: uppercase" />
+                            </div>
+                            <div class="form-group">
+                                <label for="promo-code-percent">Réduction (%) *</label>
+                                <input id="promo-code-percent" type="number" min="1" max="100" step="1" required value="10" />
+                            </div>
+                            <div class="form-group">
+                                <label for="promo-code-expires">Date d’expiration (facultatif)</label>
+                                <input id="promo-code-expires" type="date" />
+                            </div>
+                            <div class="form-group">
+                                <label for="promo-code-description">Description</label>
+                                <textarea id="promo-code-description" placeholder="Code pour la publicité de la marque XYZ"></textarea>
+                            </div>
+                            <button class="btn btn-primaire" type="submit">Enregistrer le code</button>
+                        </form>
+                    </div>
+
+                    <div class="form-card">
+                        <h2>Codes actifs</h2>
+                        <div id="promo-codes-list"></div>
+                    </div>
+                </div>
+
                 <div id="payment-numbers" class="admin-section">
                     <div class="admin-header"><h1>Numéros MTN Mobile Money</h1></div>
                     <div class="form-card">
@@ -708,6 +747,7 @@
                 if (sectionId === "manage-products") loadProductsList();
                 if (sectionId === "orders") loadOrders();
                 if (sectionId === "users") loadUsers();
+                if (sectionId === "promo-codes") loadPromoCodes();
                 if (sectionId === "payment-numbers") loadPaymentNumbers();
                 if (sectionId === "videos") loadVideoManagement();
             }
@@ -944,6 +984,118 @@
                     count.textContent = "";
                     tbody.innerHTML = `<tr><td colspan="4" style="text-align: center; padding: 2rem; color: #ff8f9b;">${escapeHtml(error.message || "Impossible de charger les comptes.")}</td></tr>`;
                 }
+            }
+
+            async function loadPromoCodes() {
+                const promoCodes = await app.getPromoCodes();
+                const container = document.getElementById('promo-codes-list');
+                if (!promoCodes.length) {
+                    container.innerHTML = '<p>Aucun code promo enregistré.</p>';
+                    return;
+                }
+
+                container.innerHTML = promoCodes.map((promo) => {
+                    const expiresAt = promo.expires_at || promo.expiresAt;
+                    const isExpired = expiresAt && new Date(expiresAt) < new Date();
+                    const status = promo.active === false || isExpired ? 'Inactif' : 'Actif';
+                    const code = promo.code || app.normalizePromoCode(promo.name || promo.codeValue || '');
+                    const partner = promo.partner_name || promo.partnerName || 'Partenaire';
+                    const percent = promo.discount_percent ?? promo.discountPercent ?? 0;
+                    return `
+                        <div class="stat-card">
+                            <h3>${escapeHtml(code)}</h3>
+                            <p><strong>Partenaire :</strong> ${escapeHtml(partner)}</p>
+                            <p><strong>Réduction :</strong> ${percent}%</p>
+                            <p><strong>Statut :</strong> ${status}</p>
+                            <p><strong>Expiration :</strong> ${expiresAt ? new Date(expiresAt).toLocaleDateString('fr-FR') : 'Aucune'}</p>
+                            <p>${escapeHtml(promo.description || '')}</p>
+                            <div style="display: flex; gap: 0.5rem; margin-top: 0.75rem; flex-wrap: wrap;">
+                                <button type="button" class="btn btn-primaire" onclick="togglePromoCodeStatus(${promo.id}, ${String(promo.active !== false && !isExpired)})">${promo.active === false || isExpired ? 'Réactiver' : 'Désactiver'}</button>
+                                <button type="button" class="btn btn-secondaire" onclick="deletePromoCode(${promo.id})">Supprimer</button>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+            }
+
+            async function addPromoCode(event) {
+                event.preventDefault();
+                const partnerName = document.getElementById('promo-code-name').value.trim();
+                const code = app.normalizePromoCode(document.getElementById('promo-code-value').value);
+                const discountPercent = Number(document.getElementById('promo-code-percent').value || 0);
+                const expiresAt = document.getElementById('promo-code-expires').value || null;
+                const description = document.getElementById('promo-code-description').value.trim();
+
+                if (!partnerName || !code || !discountPercent) {
+                    alert('Veuillez remplir le nom du partenaire, le code promo et le pourcentage.');
+                    return;
+                }
+
+                const currentCodes = await app.getPromoCodes();
+                const existing = currentCodes.find((item) => app.normalizePromoCode(item.code) === code);
+                if (existing) {
+                    alert('Ce code promo existe déjà.');
+                    return;
+                }
+
+                const promo = {
+                    id: Date.now(),
+                    code,
+                    partner_name: partnerName,
+                    partnerName,
+                    discount_percent: discountPercent,
+                    discountPercent,
+                    description,
+                    active: true,
+                    expires_at: expiresAt,
+                    expiresAt,
+                    created_at: new Date().toISOString(),
+                    createdAt: new Date().toISOString()
+                };
+
+                const updatedCodes = [promo, ...currentCodes];
+                localStorage.setItem('bgshop_promo_codes', JSON.stringify(updatedCodes));
+                const client = window.bgSupabase?.getClient();
+                if (client) {
+                    const { error } = await client.from('promo_codes').insert({
+                        code: promo.code,
+                        partner_name: partnerName,
+                        discount_percent: discountPercent,
+                        description,
+                        active: true,
+                        expires_at: expiresAt ? new Date(expiresAt).toISOString() : null
+                    });
+                    if (error) {
+                        alert(error.message || 'Le code promo a été sauvegardé localement mais n’a pas pu être synchronisé avec Supabase.');
+                    }
+                }
+                event.target.reset();
+                loadPromoCodes();
+            }
+
+            async function togglePromoCodeStatus(promoId, currentActive) {
+                const currentCodes = await app.getPromoCodes();
+                const updated = currentCodes.map((promo) => promo.id === promoId ? { ...promo, active: !currentActive } : promo);
+                localStorage.setItem('bgshop_promo_codes', JSON.stringify(updated));
+                const client = window.bgSupabase?.getClient();
+                if (client) {
+                    const { error } = await client.from('promo_codes').update({ active: !currentActive }).eq('id', promoId);
+                    if (error) alert(error.message || 'Impossible de mettre à jour le statut du code.');
+                }
+                loadPromoCodes();
+            }
+
+            async function deletePromoCode(promoId) {
+                if (!confirm('Supprimer ce code promo ?')) return;
+                const currentCodes = await app.getPromoCodes();
+                const updated = currentCodes.filter((promo) => promo.id !== promoId);
+                localStorage.setItem('bgshop_promo_codes', JSON.stringify(updated));
+                const client = window.bgSupabase?.getClient();
+                if (client) {
+                    const { error } = await client.from('promo_codes').delete().eq('id', promoId);
+                    if (error) alert(error.message || 'Impossible de supprimer le code promo.');
+                }
+                loadPromoCodes();
             }
 
             async function loadPaymentNumbers() {

@@ -386,6 +386,39 @@ const app = {
     if (!localStorage.getItem('bgshop_notifications')) {
       localStorage.setItem('bgshop_notifications', JSON.stringify([]));
     }
+
+    if (!localStorage.getItem('bgshop_promo_codes')) {
+      localStorage.setItem('bgshop_promo_codes', JSON.stringify([
+        {
+          id: 1,
+          code: 'MAYA10',
+          partner_name: 'Maya',
+          partnerName: 'Maya',
+          discount_percent: 10,
+          discountPercent: 10,
+          description: 'Code promo de Maya pour la promotion du site.',
+          active: true,
+          expires_at: null,
+          expiresAt: null,
+          created_at: new Date().toISOString(),
+          createdAt: new Date().toISOString()
+        },
+        {
+          id: 2,
+          code: 'BANDG5',
+          partner_name: 'Réseau B&G',
+          partnerName: 'Réseau B&G',
+          discount_percent: 5,
+          discountPercent: 5,
+          description: 'Code promo de lancement B&G Shop.',
+          active: true,
+          expires_at: null,
+          expiresAt: null,
+          created_at: new Date().toISOString(),
+          createdAt: new Date().toISOString()
+        }
+      ]));
+    }
     const videos = JSON.parse(localStorage.getItem('bgshop_videos') || '[]');
     const storedAds = JSON.parse(localStorage.getItem('bgshop_ad_videos') || '[]');
     if (storedAds.length && storedAds.every((ad) => typeof ad !== 'object')) {
@@ -562,6 +595,76 @@ const app = {
     return JSON.parse(localStorage.getItem('bgshop_cart') || '[]');
   },
 
+  normalizePromoCode(code) {
+    return String(code || '').trim().toUpperCase();
+  },
+
+  async getPromoCodes() {
+    const client = window.bgSupabase?.getClient();
+    if (client) {
+      try {
+        const { data, error } = await client.from('promo_codes').select('*').order('created_at', { ascending: false });
+        if (!error && data) {
+          localStorage.setItem('bgshop_promo_codes', JSON.stringify(data));
+          return data;
+        }
+      } catch (error) {
+        console.error('Impossible de charger les codes promo.', error);
+      }
+    }
+    return JSON.parse(localStorage.getItem('bgshop_promo_codes') || '[]');
+  },
+
+  async getValidPromoCode(code) {
+    const normalizedCode = this.normalizePromoCode(code);
+    if (!normalizedCode) return null;
+    const now = new Date();
+    const codes = await this.getPromoCodes();
+    return codes.find((promo) => {
+      const expiresAt = promo.expires_at || promo.expiresAt;
+      const isActive = promo.active !== false;
+      const isNotExpired = !expiresAt || new Date(expiresAt) >= now;
+      return promo.code === normalizedCode && isActive && isNotExpired;
+    }) || null;
+  },
+
+  calculateDiscount(amount, promo) {
+    const baseAmount = Number(amount || 0);
+    const discountPercent = Number(promo?.discount_percent ?? promo?.discountPercent ?? 0);
+    const discountAmount = Math.max(0, Math.min(baseAmount, Number(((baseAmount * discountPercent) / 100).toFixed(2))));
+    return {
+      discountPercent,
+      discountAmount,
+      finalAmount: Number((baseAmount - discountAmount).toFixed(2))
+    };
+  },
+
+  async applyPromoToAmount(amount, code) {
+    const promo = await this.getValidPromoCode(code);
+    if (!promo) {
+      return {
+        valid: false,
+        message: 'Code promo introuvable ou expiré.'
+      };
+    }
+    const discount = this.calculateDiscount(amount, promo);
+    if (!discount.discountPercent) {
+      return {
+        valid: false,
+        message: 'Ce code promo ne contient pas de réduction valide.'
+      };
+    }
+    return {
+      valid: true,
+      code: promo.code,
+      partnerName: promo.partner_name || promo.partnerName || 'Partenaire B&G',
+      discountPercent: discount.discountPercent,
+      discountAmount: discount.discountAmount,
+      finalAmount: discount.finalAmount,
+      message: `${promo.code} appliqué : ${discount.discountPercent}% de réduction pour ${promo.partner_name || promo.partnerName || 'notre partenaire'}.`
+    };
+  },
+
   addToCart(productId) {
     const cart = this.getCart();
     if (!cart.includes(productId)) cart.push(productId);
@@ -723,14 +826,19 @@ const app = {
         customer_phone: order.customerPhone,
         customer_address: order.customerAddress,
         payment_method: order.paymentMethod,
-        payment_proof: order.paymentProof || null
+        payment_proof: order.paymentProof || null,
+        discount_code: order.discountCode || null,
+        discount_percent: Number(order.discountPercent || 0),
+        discount_amount: Number(order.discountAmount || 0),
+        partner_name: order.partnerName || null,
+        final_total: Number(order.finalTotal || order.productPrice || 0)
       }).select('id, created_at').single();
       if (error) throw new Error(`Impossible d’enregistrer la commande : ${error.message}`);
       const { error: itemError } = await client.from('order_items').insert({
         order_id: data.id,
         product_id: order.productId || null,
         product_title: order.productTitle,
-        product_price: order.productPrice || 0,
+        product_price: Number(order.finalTotal || order.productPrice || 0),
         quantity: 1
       });
       if (itemError) {

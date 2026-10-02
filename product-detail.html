@@ -302,6 +302,14 @@
                         <input type="file" id="payment-proof" accept="image/*" />
                     </div>
                     <p id="cash-payment-message" style="display: none; color: var(--accent-2);">Vous payerez à la livraison</p>
+                    <div class="form-group">
+                        <label for="promo-code">Code promo</label>
+                        <div style="display: flex; gap: 0.5rem; align-items: center;">
+                            <input type="text" id="promo-code" placeholder="Ex. MAYA10" style="flex: 1;" />
+                            <button type="button" class="btn btn-secondaire" onclick="applyPromoCode()">Appliquer</button>
+                        </div>
+                        <div id="promo-status" style="margin-top: 0.5rem; min-height: 1.4rem; color: var(--accent-2); font-size: 0.9rem;"></div>
+                    </div>
                     <div style="display: flex; gap: 1rem">
                         <button type="submit" class="btn btn-primaire" style="flex: 1">Envoyer la commande</button>
                         <button type="button" onclick="closeOrderModal()" class="btn btn-secondaire" style="flex: 1">
@@ -464,6 +472,30 @@
                 document.getElementById("payment-proof").required = method === "mobile_money";
             }
 
+            let currentAppliedPromo = null;
+
+            async function applyPromoCode() {
+                const product = app.getProduct(currentProductId);
+                if (!product) {
+                    document.getElementById('promo-status').textContent = 'Produit introuvable.';
+                    return;
+                }
+                const code = document.getElementById('promo-code').value.trim();
+                if (!code) {
+                    document.getElementById('promo-status').textContent = 'Saisissez un code promo.';
+                    currentAppliedPromo = null;
+                    return;
+                }
+
+                const result = await app.applyPromoToAmount(product.price, code);
+                document.getElementById('promo-status').textContent = result.message || 'Code promo invalide.';
+                if (result.valid) {
+                    currentAppliedPromo = result;
+                } else {
+                    currentAppliedPromo = null;
+                }
+            }
+
             function toggleProductCollection(key) {
                 const user = app.checkAuth();
                 if (!user) return redirectToLogin();
@@ -509,6 +541,11 @@
                     userEmail: user.email,
                     paymentMethod,
                     paymentProof,
+                    discountCode: currentAppliedPromo?.code || null,
+                    discountPercent: currentAppliedPromo?.discountPercent || 0,
+                    discountAmount: currentAppliedPromo?.discountAmount || 0,
+                    partnerName: currentAppliedPromo?.partnerName || null,
+                    finalTotal: currentAppliedPromo ? currentAppliedPromo.finalAmount : product.price,
                 };
 
                 try {

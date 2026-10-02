@@ -1,0 +1,8 @@
+{
+  "appId": "com.bgshop.app",
+  "appName": "B&G Shop",
+  "webDir": "www",
+  "server": {
+    "androidScheme": "https"
+  }
+}

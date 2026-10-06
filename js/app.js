@@ -203,7 +203,8 @@ const app = {
   init() {
     this.ensureDefaultData();
     this.checkAuth();
-    return this.hydrateFromSupabase();
+    this.ready = this.hydrateFromSupabase();
+    return this.ready;
   },
 
   async hydrateFromSupabase() {
@@ -287,6 +288,7 @@ const app = {
           title: video.title,
           description: video.description,
           videoUrl: video.video_url,
+          mediaType: this.getAdMediaType({ videoUrl: video.video_url }),
           postedDate: video.created_at,
           position: link.position
         } : null;
@@ -917,6 +919,14 @@ const app = {
     return this.getAdVideos().map((video) => video.id);
   },
 
+  getAdMediaType(media) {
+    if (media.mediaType === 'image' || media.mediaType === 'video') return media.mediaType;
+    const mediaUrl = String(media.videoUrl || '').toLowerCase().split(/[?#]/, 1)[0];
+    return mediaUrl.startsWith('data:image/') || /\.(avif|gif|jpe?g|png|webp)$/.test(mediaUrl)
+      ? 'image'
+      : 'video';
+  },
+
   async setAdVideoIds(videoIds) {
     const selectedIds = new Set(videoIds);
     const ads = this.getAdVideos().filter((video) => selectedIds.has(video.id));
@@ -960,9 +970,11 @@ const app = {
       video.id = data.id;
       video.postedDate = data.created_at;
       video.videoUrl = data.video_url;
+      video.mediaType = this.getAdMediaType(video);
     } else {
       video.id = Math.max(...ads.map((ad) => ad.id || 0), 0) + 1;
       video.postedDate = new Date().toISOString();
+      video.mediaType = this.getAdMediaType(video);
     }
     ads.push(video);
     localStorage.setItem('bgshop_ad_videos', JSON.stringify(ads));

@@ -14,8 +14,9 @@
         .market-links > a, .market-links .ad-bar { display: none; }
         .market-links #auth-container { display: flex; }
         .market-hero { position: relative; min-height: 430px; display: grid; place-items: center; overflow: hidden; background: #17282b; }
-        .market-hero-video, .market-hero-shade { position: absolute; inset: 0; width: 100%; height: 100%; }
+        .market-hero-video, .market-hero-image, .market-hero-shade { position: absolute; inset: 0; width: 100%; height: 100%; }
         .market-hero-video { object-fit: cover; opacity: .62; }
+        .market-hero-image { object-fit: cover; opacity: .62; }
         .market-hero-shade { background: linear-gradient(90deg, rgba(7, 24, 27, .82), rgba(7, 24, 27, .3) 58%, rgba(7, 24, 27, .72)); }
         .market-hero-content { position: relative; z-index: 1; width: min(1180px, calc(100% - 2rem)); padding: 4.5rem 0 3rem; color: #fff; }
         .market-hero h1 { max-width: 650px; margin: .5rem 0 .8rem; color: #fff; font-size: clamp(2.3rem, 5vw, 4.5rem); line-height: 1.03; }
@@ -86,7 +87,8 @@
 
     <main class="page-content">
         <section class="market-hero" aria-label="Recherche B&G Shop">
-            <video class="market-hero-video" id="hero-ad-video" autoplay muted loop playsinline></video>
+            <video class="market-hero-video" id="hero-ad-video" autoplay muted playsinline></video>
+            <img class="market-hero-image" id="hero-ad-image" alt="" hidden />
             <div class="market-hero-shade"></div>
             <div class="market-hero-content">
                 <span class="eyebrow">La marketplace qui vous rapproche</span>
@@ -157,14 +159,37 @@
         function addToCart(productId) { app.addToCart(productId); window.location.href = 'panier.html'; }
         function goToProduct(productId) { window.location.href = `product-detail.html?id=${productId}`; }
         function openMessages() { window.location.href = app.checkAuth() ? 'messages.html' : 'login.html'; }
-        document.addEventListener('DOMContentLoaded', () => {
+        document.addEventListener('DOMContentLoaded', async () => {
             const splash = document.getElementById('site-splash');
             const splashDuration = window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 400 : 1800;
             window.setTimeout(() => splash.classList.add('is-hidden'), splashDuration);
             renderCategories(); renderProducts();
             document.getElementById('product-search').addEventListener('input', renderProducts);
-            const videos = app.getAdVideos().filter((video) => app.getAdVideoIds().includes(video.id));
-            if (videos[0]) { const player = document.getElementById('hero-ad-video'); player.src = videos[0].videoUrl; player.play().catch(() => {}); }
+            await app.ready?.catch((error) => console.error('Échec du chargement Supabase :', error));
+            const ads = app.getAdVideos();
+            if (ads.length) {
+                const player = document.getElementById('hero-ad-video');
+                const image = document.getElementById('hero-ad-image');
+                let adTimer;
+                const showAd = (index, failedCount = 0) => {
+                    window.clearTimeout(adTimer);
+                    if (failedCount >= ads.length) return;
+                    const ad = ads[index];
+                    const nextAd = () => showAd((index + 1) % ads.length);
+                    const skipFailedAd = () => showAd((index + 1) % ads.length, failedCount + 1);
+                    if (app.getAdMediaType(ad) === 'image') {
+                        player.onended = null; player.onerror = null; player.pause(); player.removeAttribute('src'); player.load(); player.hidden = true;
+                        image.onerror = ads.length > 1 ? skipFailedAd : null; image.hidden = false; image.src = ad.videoUrl;
+                        if (ads.length > 1) adTimer = window.setTimeout(nextAd, 6000);
+                        return;
+                    }
+                    image.onerror = null; image.hidden = true; image.removeAttribute('src');
+                    player.hidden = false; player.loop = ads.length === 1; player.onended = ads.length > 1 ? nextAd : null;
+                    player.onerror = ads.length > 1 ? skipFailedAd : null; player.src = ad.videoUrl;
+                    player.play().catch(skipFailedAd);
+                };
+                showAd(0);
+            }
         });
     </script>
 </body>

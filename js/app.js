@@ -919,6 +919,13 @@ const app = {
     return this.getAdVideos().map((video) => video.id);
   },
 
+  getAdManagementVideos() {
+    const uploadedAds = this.getVideos().filter((video) =>
+      ['Vidéo publicitaire B&G Shop', 'Publicité B&G Shop'].includes(video.description)
+    );
+    return [...new Map([...this.getAdVideos(), ...uploadedAds].map((video) => [String(video.id), video])).values()];
+  },
+
   getAdMediaType(media) {
     if (media.mediaType === 'image' || media.mediaType === 'video') return media.mediaType;
     const mediaUrl = String(media.videoUrl || '').toLowerCase().split(/[?#]/, 1)[0];
@@ -929,7 +936,7 @@ const app = {
 
   async setAdVideoIds(videoIds) {
     const selectedIds = new Set(videoIds);
-    const ads = this.getAdVideos().filter((video) => selectedIds.has(video.id));
+    const ads = this.getAdManagementVideos().filter((video) => selectedIds.has(video.id));
     localStorage.setItem('bgshop_ad_videos', JSON.stringify(ads));
     const client = window.bgSupabase?.getClient();
     const user = this.checkAuth();

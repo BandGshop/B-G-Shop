@@ -216,6 +216,36 @@
                 }
             }
 
+            function readProfileImage(file) {
+                return new Promise((resolve, reject) => {
+                    if (file.size > 10 * 1024 * 1024) {
+                        reject(new Error("Photo trop volumineuse"));
+                        return;
+                    }
+                    const image = new Image();
+                    const objectUrl = URL.createObjectURL(file);
+                    image.onload = () => {
+                        try {
+                            const scale = Math.min(1, 256 / Math.max(image.naturalWidth, image.naturalHeight));
+                            const canvas = document.createElement("canvas");
+                            canvas.width = Math.max(1, Math.round(image.naturalWidth * scale));
+                            canvas.height = Math.max(1, Math.round(image.naturalHeight * scale));
+                            canvas.getContext("2d").drawImage(image, 0, 0, canvas.width, canvas.height);
+                            resolve(canvas.toDataURL("image/jpeg", 0.75));
+                        } catch (error) {
+                            reject(error);
+                        } finally {
+                            URL.revokeObjectURL(objectUrl);
+                        }
+                    };
+                    image.onerror = () => {
+                        URL.revokeObjectURL(objectUrl);
+                        reject(new Error("Image illisible"));
+                    };
+                    image.src = objectUrl;
+                });
+            }
+
             async function handleRegister() {
                 const registerButton = document.querySelector('#register-form .form-actions button');
                 const name = document.getElementById("register-name").value;
@@ -263,22 +293,23 @@
 
                 registerButton.disabled = true;
                 document.getElementById("register-error").textContent = "Création du compte...";
-                const finishRegistration = async (profileImage = "") => {
-                    try {
-                        const result = await app.register(email.trim(), password, name.trim(), profileImage);
-                        if (result.success) window.location.href = "index.html";
-                        else document.getElementById("register-error").textContent = result.message;
-                    } catch (error) {
-                        document.getElementById("register-error").textContent = error.message || "Impossible de créer le compte.";
-                    } finally {
-                        registerButton.disabled = false;
+                try {
+                    let profileImage = "";
+                    if (photo) {
+                        try {
+                            profileImage = await readProfileImage(photo);
+                        } catch {
+                            document.getElementById("register-error").textContent = "Photo ignorée; création du compte...";
+                        }
                     }
-                };
-                if (photo) {
-                    const reader = new FileReader();
-                    reader.onload = () => finishRegistration(reader.result);
-                    reader.readAsDataURL(photo);
-                } else finishRegistration();
+                    const result = await app.register(email.trim(), password, name.trim(), profileImage);
+                    if (result.success) window.location.href = "index.html";
+                    else document.getElementById("register-error").textContent = result.message;
+                } catch (error) {
+                    document.getElementById("register-error").textContent = error.message || "Impossible de créer le compte.";
+                } finally {
+                    registerButton.disabled = false;
+                }
             }
 
             function togglePassword(inputId, button) {

@@ -203,6 +203,7 @@ const app = {
   init() {
     this.ensureDefaultData();
     this.checkAuth();
+    this.requestNotificationPermissionOnInteraction();
     this.ready = this.hydrateFromSupabase();
     return this.ready;
   },
@@ -298,6 +299,7 @@ const app = {
 
     const { data: notifications } = await client.from('notifications').select('*').order('created_at', { ascending: false });
     if (notifications) localStorage.setItem('bgshop_notifications', JSON.stringify(notifications.map((item) => ({ ...item, createdDate: item.created_at }))));
+    this.subscribeToNotifications(client);
     const user = this.checkAuth();
     if (user?.id) {
       const [{ data: settings }, { data: cartItems }, { data: collections }] = await Promise.all([
@@ -772,6 +774,7 @@ const app = {
       }
       product.id = data.id;
       product.postedDate = data.created_at;
+      await this.notifyNewProduct(product);
     } else {
       product.id = Math.max(...products.map(p => p.id), 0) + 1;
       product.postedDate = new Date().toISOString();
@@ -1324,10 +1327,69 @@ const app = {
     return JSON.parse(localStorage.getItem('bgshop_notifications') || '[]');
   },
 
+  requestNotificationPermissionOnInteraction() {
+    if (!('Notification' in window) || Notification.permission !== 'default') return;
+    const requestPermission = async () => {
+      document.removeEventListener('pointerup', requestPermission);
+      try {
+        await Notification.requestPermission();
+      } catch (error) {
+        console.warn('La permission de notification n’a pas pu être demandée.', error);
+      }
+    };
+    document.addEventListener('pointerup', requestPermission, { once: true });
+  },
+
+  showBrowserNotification(notification) {
+    if (!('Notification' in window) || Notification.permission !== 'granted') return;
+    try {
+      new Notification(notification.title, {
+        body: notification.text,
+        icon: 'images/bglogo.jpeg'
+      });
+    } catch (error) {
+      console.warn('Impossible d’afficher la notification navigateur.', error);
+    }
+  },
+
+  subscribeToNotifications(client) {
+    if (!client.channel) return;
+    client.channel('bgshop-product-notifications').on('postgres_changes', {
+      event: 'INSERT',
+      schema: 'public',
+      table: 'notifications'
+    }, (payload) => {
+      const notification = payload.new;
+      const localNotification = { ...notification, createdDate: notification.created_at };
+      const notifications = this.getNotifications();
+      if (!notifications.some((item) => String(item.id) === String(notification.id))) {
+        notifications.unshift(localNotification);
+        localStorage.setItem('bgshop_notifications', JSON.stringify(notifications));
+        this.showBrowserNotification(localNotification);
+      }
+      window.dispatchEvent(new CustomEvent('bgshop-notification', { detail: localNotification }));
+    }).subscribe();
+  },
+
+  async notifyNewProduct(product) {
+    const notification = await this.addNotification({
+      title: 'Nouvel article disponible',
+      text: `${product.title} vient d’être publié sur B&G Shop.`
+    });
+    this.showBrowserNotification(notification);
+    const client = window.bgSupabase?.getClient();
+    if (client?.functions) {
+      const { error } = await client.functions.invoke('send-product-notification', {
+        body: { productId: product.id, title: notification.title, text: notification.text }
+      });
+      if (error) console.warn('Notification e-mail non envoyée:', error.message);
+    }
+  },
+
   async addNotification(notification) {
     const notifications = this.getNotifications();
     const client = window.bgSupabase?.getClient();
-    const user = this.checkAuth();
+    const user = await this.getAuthenticatedUser();
     const localNotification = { ...notification, id: Date.now(), createdDate: new Date().toISOString() };
     if (client) {
       if (!user?.id || user.role !== 'admin') throw new Error('Seul un administrateur peut envoyer une notification.');

@@ -383,8 +383,9 @@
           </div>
         `;
 
-                const liked = user && app.getUserProductIds(user.email, "liked").includes(currentProductId);
-                const favorite = user && app.getUserProductIds(user.email, "favorites").includes(currentProductId);
+                const productId = String(currentProductId);
+                const liked = user && app.getUserProductIds(user.email, "liked").includes(productId);
+                const favorite = user && app.getUserProductIds(user.email, "favorites").includes(productId);
                 document.getElementById("like-product-btn")?.classList.toggle("active", Boolean(liked));
                 document.getElementById("favorite-product-btn")?.classList.toggle("active", Boolean(favorite));
 
@@ -496,13 +497,20 @@
                 }
             }
 
-            function toggleProductCollection(key) {
+            async function toggleProductCollection(key) {
                 const user = app.checkAuth();
                 if (!user) return redirectToLogin();
-                const active = app.toggleProductCollection(currentProductId, user.email, key);
                 const button = document.getElementById(key === 'liked' ? 'like-product-btn' : 'favorite-product-btn');
-                button.classList.toggle('active', active);
-                button.textContent = key === 'liked' ? '👍 J’aime' : (active ? '♥ Ajouté aux favoris' : '♡ Ajouter aux favoris');
+                button.disabled = true;
+                try {
+                    const active = await app.toggleProductCollection(currentProductId, user.email, key);
+                    button.classList.toggle('active', active);
+                    button.textContent = key === 'liked' ? '👍 J’aime' : (active ? '♥ Ajouté aux favoris' : '♡ Ajouter aux favoris');
+                } catch (error) {
+                    alert(error.message || 'Impossible de mettre à jour ce produit.');
+                } finally {
+                    button.disabled = false;
+                }
             }
 
             async function submitOrder(e) {

@@ -728,23 +728,41 @@ const app = {
   },
 
   getUserProductIds(userEmail, key) {
-    return JSON.parse(localStorage.getItem(`bgshop_product_${key}_${userEmail}`) || '[]');
+    return JSON.parse(localStorage.getItem(`bgshop_product_${key}_${userEmail}`) || '[]')
+      .map((id) => String(id));
   },
 
-  toggleProductCollection(productId, userEmail, key) {
+  async toggleProductCollection(productId, userEmail, key) {
     if (!userEmail) return false;
+    const normalizedProductId = String(productId);
     const ids = this.getUserProductIds(userEmail, key);
-    const index = ids.indexOf(productId);
-    if (index >= 0) ids.splice(index, 1); else ids.push(productId);
-    localStorage.setItem(`bgshop_product_${key}_${userEmail}`, JSON.stringify(ids));
+    const index = ids.indexOf(normalizedProductId);
+    const isAdding = index === -1;
+    if (isAdding) ids.push(normalizedProductId);
+    else ids.splice(index, 1);
+
     const user = this.checkAuth();
     const client = window.bgSupabase?.getClient();
     if (client && user?.id) {
-      const query = client.from('product_collections').delete().eq('product_id', productId).eq('user_id', user.id).eq('collection', key);
-      if (ids.includes(productId)) query.then(() => client.from('product_collections').insert({ product_id: productId, user_id: user.id, collection: key }));
-      else query;
+      const collection = client.from('product_collections');
+      let error;
+      if (isAdding) {
+        ({ error } = await collection.upsert({
+          product_id: productId,
+          user_id: user.id,
+          collection: key
+        }, { onConflict: 'product_id,user_id,collection' }));
+      } else {
+        ({ error } = await collection.delete()
+          .eq('product_id', productId)
+          .eq('user_id', user.id)
+          .eq('collection', key));
+      }
+      if (error) throw new Error(`Impossible de mettre à jour ce produit : ${error.message}`);
     }
-    return ids.includes(productId);
+
+    localStorage.setItem(`bgshop_product_${key}_${userEmail}`, JSON.stringify(ids));
+    return isAdding;
   },
 
   async addProduct(product) {

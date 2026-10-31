@@ -473,7 +473,7 @@
 
                             <div class="form-group">
                                 <label for="product-category">Catégorie *</label>
-                                <select id="product-category">
+                                <select id="product-category" required>
                                     <option value="">Sélectionner une catégorie</option>
                                     <option value="Voitures" style="background-color: black">Voitures</option>
                                     <option value="Animaux" style="background-color: black">Animaux</option>
@@ -785,6 +785,8 @@
                     trending: document.getElementById("product-trending").checked,
                 };
 
+                const submitButton = e.target.querySelector('button[type="submit"]');
+                submitButton.disabled = true;
                 try {
                     await app.addProduct(product);
                 } catch (error) {
@@ -792,7 +794,10 @@
                     msg.textContent = error.message || "Impossible d'ajouter l'article.";
                     msg.className = "error-message";
                     msg.style.display = "block";
+                    submitButton.disabled = false;
                     return;
+                } finally {
+                    submitButton.disabled = false;
                 }
 
                 // Show success message

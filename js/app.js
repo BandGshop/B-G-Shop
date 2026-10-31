@@ -748,16 +748,16 @@ const app = {
   async addProduct(product) {
     const products = this.getProducts();
     const client = window.bgSupabase?.getClient();
-    const user = this.checkAuth();
     if (client) {
       const { data: authData, error: authError } = await client.auth.getUser();
       if (authError || !authData.user?.id) {
         throw new Error('Votre session Supabase est expirée. Reconnectez-vous pour publier un article.');
       }
-      const sellerId = authData.user.id;
+      const user = await this.getAuthenticatedUser();
       if (!user || user.role !== 'admin') {
         throw new Error('Seul un administrateur peut publier un article.');
       }
+      const sellerId = authData.user.id;
       const { data, error } = await client.from('products').insert({
         seller_id: sellerId,
         title: product.title,
@@ -778,7 +778,11 @@ const app = {
     }
 
     products.push(product);
-    localStorage.setItem('bgshop_products', JSON.stringify(products));
+    try {
+      localStorage.setItem('bgshop_products', JSON.stringify(products));
+    } catch (error) {
+      console.warn('Produit enregistré, mais le cache local est plein ou inaccessible.', error);
+    }
     return product;
   },
 

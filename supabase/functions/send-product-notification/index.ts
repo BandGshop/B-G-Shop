@@ -1,5 +1,3 @@
-import { createClient } from "jsr:@supabase/supabase-js@2";
-
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
@@ -15,15 +13,18 @@ Deno.serve(async (request) => {
   const resendApiKey = Deno.env.get("RESEND_API_KEY") ?? "";
   const emailFrom = Deno.env.get("EMAIL_FROM") ?? "B&G Shop <notifications@bgshop.example>";
   const siteUrl = Deno.env.get("SITE_URL") ?? "";
-  const client = createClient(supabaseUrl, serviceRoleKey);
   const accessToken = request.headers.get("Authorization")?.replace("Bearer ", "");
   if (!accessToken) return new Response("Authentification requise", { status: 401, headers: corsHeaders });
 
-  const { data: authData, error: authError } = await client.auth.getUser(accessToken);
-  if (authError || !authData.user) {
-    return new Response("Session invalide", { status: 401, headers: corsHeaders });
-  }
-  const { data: profile } = await client.from("profiles").select("role").eq("id", authData.user.id).single();
+  const authResponse = await fetch(`${supabaseUrl}/auth/v1/user`, {
+    headers: { Authorization: `Bearer ${accessToken}`, apikey: serviceRoleKey },
+  });
+  if (!authResponse.ok) return new Response("Session invalide", { status: 401, headers: corsHeaders });
+  const authenticatedUser = await authResponse.json();
+  const profileResponse = await fetch(`${supabaseUrl}/rest/v1/profiles?id=eq.${authenticatedUser.id}&select=role`, {
+    headers: { apikey: serviceRoleKey, Authorization: `Bearer ${serviceRoleKey}` },
+  });
+  const [profile] = await profileResponse.json();
   if (profile?.role !== "admin") {
     return new Response("Accès réservé aux administrateurs", { status: 403, headers: corsHeaders });
   }
@@ -38,9 +39,12 @@ Deno.serve(async (request) => {
   const recipients = new Set<string>();
   let page = 1;
   while (true) {
-    const { data, error } = await client.auth.admin.listUsers(page, 100);
-    if (error) return new Response(error.message, { status: 500, headers: corsHeaders });
-    data.users.forEach((user) => {
+    const usersResponse = await fetch(`${supabaseUrl}/auth/v1/admin/users?page=${page}&per_page=100`, {
+      headers: { apikey: serviceRoleKey, Authorization: `Bearer ${serviceRoleKey}` },
+    });
+    if (!usersResponse.ok) return new Response(await usersResponse.text(), { status: 500, headers: corsHeaders });
+    const data = await usersResponse.json();
+    data.users.forEach((user: { email?: string; banned_until?: string | null }) => {
       if (user.email && !user.banned_until) recipients.add(user.email);
     });
     if (data.users.length < 100) break;

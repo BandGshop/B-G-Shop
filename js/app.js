@@ -551,7 +551,8 @@ const app = {
 
   // Product management
   getProducts() {
-    return JSON.parse(localStorage.getItem('bgshop_products'));
+    const products = JSON.parse(localStorage.getItem('bgshop_products') || '[]');
+    return Array.isArray(products) ? products : [];
   },
 
   getTrendingProducts() {

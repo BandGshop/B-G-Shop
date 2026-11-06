@@ -77,8 +77,8 @@
     function card(item, type) { return `<article class="settings-item">${item.image ? `<img src="${item.image}" alt="${item.title || item.name || 'Contenu'}">` : ''}<h3>${item.title || item.name || 'Vidéo'}</h3><p>${type === 'order' ? `${item.status || 'pending'} · ${item.productPrice || 0} FCFA` : (item.description || '')}</p></article>`; }
     function renderCollection(id, items, type) { $(id).innerHTML = items.length ? items.map((item) => card(item, type)).join('') : '<p class="settings-empty">Aucun contenu pour le moment.</p>'; }
     function renderContent() {
-      const products = app.getProducts(); const videos = app.getVideos(); const likedProductIds = app.getUserProductIds(user.email, 'liked'); const favoriteProductIds = app.getUserProductIds(user.email, 'favorites'); const likedVideos = videos.filter((video) => (video.likes || []).some((like) => like.userEmail === user.email)); const favoriteVideos = videos.filter((video) => app.getFavoriteVideoIds(user.email).includes(video.id));
-      renderCollection('liked-products', products.filter((product) => likedProductIds.includes(product.id))); renderCollection('favorite-products', products.filter((product) => favoriteProductIds.includes(product.id))); renderCollection('liked-videos', likedVideos); renderCollection('favorite-videos', favoriteVideos);
+      const products = app.getProducts(); const videos = app.getVideos(); const likedProductIds = app.getUserProductIds(user.email, 'liked').map(String); const favoriteProductIds = app.getUserProductIds(user.email, 'favorites').map(String); const likedVideos = videos.filter((video) => (video.likes || []).some((like) => like.userEmail === user.email)); const favoriteVideos = videos.filter((video) => app.getFavoriteVideoIds(user.email).includes(video.id));
+      renderCollection('liked-products', products.filter((product) => likedProductIds.includes(String(product.id)))); renderCollection('favorite-products', products.filter((product) => favoriteProductIds.includes(String(product.id)))); renderCollection('liked-videos', likedVideos); renderCollection('favorite-videos', favoriteVideos);
       $('notifications-list').innerHTML = app.getNotifications().map((notification) => `<article class="settings-item"><h3>${notification.title}</h3><p>${notification.text}</p></article>`).join('') || '<p class="settings-empty">Aucune notification.</p>';
       $('orders-list').innerHTML = app.getOrders().filter((order) => order.userEmail === user.email).map((order) => card(order, 'order')).join('') || '<p class="settings-empty">Aucune commande.</p>';
     }
@@ -102,10 +102,17 @@
       } catch (error) { status.textContent = error.message || 'Impossible d’importer les vidéos.'; }
     }
     document.addEventListener('DOMContentLoaded', async () => {
-      if (!requireUser()) return; settings = app.getUserSettings(user.email); app.applyUserSettings(settings); applyLanguage(settings.language); $('language').value = settings.language; $('site-bg-type').value = settings.siteBackground.type; $('message-bg-type').value = settings.messageBackground.type; $('admin-settings-tab').style.display = user.role === 'admin' ? 'block' : 'none'; renderContent(); toggleOptions('site'); toggleOptions('message'); if (user.role === 'admin') { renderHelp(); renderAdManagement(); }
+      if (!requireUser()) return; settings = app.getUserSettings(user.email); app.applyUserSettings(settings); applyLanguage(settings.language); $('language').value = settings.language; $('site-bg-type').value = settings.siteBackground.type; $('message-bg-type').value = settings.messageBackground.type; $('admin-settings-tab').style.display = user.role === 'admin' ? 'block' : 'none';
       await app.ready?.catch((error) => console.error('Échec du chargement Supabase :', error));
+      renderContent(); toggleOptions('site'); toggleOptions('message'); if (user.role === 'admin') { renderHelp(); renderAdManagement(); }
       if (user.role === 'admin') renderAdManagement();
-      document.querySelectorAll('.settings-nav button').forEach((button) => button.addEventListener('click', () => { document.querySelectorAll('.settings-nav button, .settings-section').forEach((element) => element.classList.remove('active')); button.classList.add('active'); $(button.dataset.section).classList.add('active'); }));
+      document.querySelectorAll('.settings-nav button').forEach((button) => button.addEventListener('click', () => {
+        document.querySelectorAll('.settings-nav button').forEach((navButton) => navButton.classList.remove('active'));
+        document.querySelectorAll('.settings-section').forEach((section) => section.classList.remove('active'));
+        button.classList.add('active');
+        const section = $(button.dataset.section);
+        if (section) section.classList.add('active');
+      }));
       ['site','message'].forEach((prefix) => $(prefix + '-bg-type').addEventListener('change', () => toggleOptions(prefix)));
       $('appearance-form').addEventListener('submit', async (event) => { event.preventDefault(); const siteImage = await readFile($('site-bg-image')); const messageImage = await readFile($('message-bg-image')); settings = { language: $('language').value, siteBackground: { type: $('site-bg-type').value, value: siteImage || ($('site-bg-type').value === 'image' ? settings.siteBackground.value : $('site-bg-color').value) }, messageBackground: { type: $('message-bg-type').value, value: messageImage || ($('message-bg-type').value === 'image' ? settings.messageBackground.value : $('message-bg-color').value) } }; try { await app.saveUserSettings(user.email, settings); applyLanguage(settings.language); $('appearance-status').textContent = 'Préférences enregistrées.'; } catch (error) { $('appearance-status').textContent = error.message || 'Impossible d’enregistrer les préférences.'; } });
       $('password-form').addEventListener('submit', async (event) => { event.preventDefault(); $('password-status').textContent = await app.changeAdminPassword(user.email, $('current-password').value, $('new-password').value) ? 'Mot de passe modifié.' : 'Mot de passe actuel incorrect.'; });

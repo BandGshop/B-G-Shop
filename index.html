@@ -163,9 +163,11 @@
             const splash = document.getElementById('site-splash');
             const splashDuration = window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 400 : 1800;
             window.setTimeout(() => splash.classList.add('is-hidden'), splashDuration);
-            renderCategories(); renderProducts();
+            renderCategories();
             document.getElementById('product-search').addEventListener('input', renderProducts);
+            window.addEventListener('bgshop-products-synced', renderProducts);
             await app.ready?.catch((error) => console.error('Échec du chargement Supabase :', error));
+            renderProducts();
             const ads = app.getAdVideos();
             if (ads.length) {
                 const player = document.getElementById('hero-ad-video');

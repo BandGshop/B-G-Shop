@@ -91,23 +91,30 @@ for insert to authenticated with check (user_id = auth.uid());
 
 alter table public.video_favorites enable row level security;
 
+drop policy if exists video_favorites_owner on public.video_favorites;
 create policy video_favorites_owner on public.video_favorites
 for all to authenticated using (user_id = auth.uid()) with check (user_id = auth.uid());
 
+drop policy if exists video_storage_read_public on storage.objects;
 create policy video_storage_read_public on storage.objects
 for select using (bucket_id = 'videos');
 
+drop policy if exists video_storage_upload_authenticated on storage.objects;
 create policy video_storage_upload_authenticated on storage.objects
 for insert to authenticated with check (bucket_id = 'videos');
 
+drop policy if exists video_storage_delete_admin on storage.objects;
 create policy video_storage_delete_admin on storage.objects
 for delete to authenticated using (bucket_id = 'videos' and public.is_admin());
 
+drop policy if exists product_images_read_public on storage.objects;
 create policy product_images_read_public on storage.objects
 for select using (bucket_id = 'product-images');
 
+drop policy if exists product_images_upload_admin on storage.objects;
 create policy product_images_upload_admin on storage.objects
 for insert to authenticated with check (bucket_id = 'product-images' and public.is_admin());
 
+drop policy if exists product_images_delete_admin on storage.objects;
 create policy product_images_delete_admin on storage.objects
 for delete to authenticated using (bucket_id = 'product-images' and public.is_admin());

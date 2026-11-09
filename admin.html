@@ -778,71 +778,62 @@
                 }
 
                 document.getElementById("product-image").setCustomValidity("");
-                const image = imageFile ? await readImageFile(imageFile) : imageUrl;
-
-                const product = {
-                    title: document.getElementById("product-title").value,
-                    category: document.getElementById("product-category").value,
-                    price: parseFloat(document.getElementById("product-price").value),
-                    image,
-                    description: document.getElementById("product-description").value,
-                    trending: document.getElementById("product-trending").checked,
-                };
-
                 const submitButton = e.target.querySelector('button[type="submit"]');
                 submitButton.disabled = true;
                 try {
-                    await app.addProduct(product, imageFile);
+                    const compressedImage = imageFile ? await app.compressImageFile(imageFile) : null;
+                    const product = {
+                        title: document.getElementById("product-title").value,
+                        category: document.getElementById("product-category").value,
+                        price: parseFloat(document.getElementById("product-price").value),
+                        image: compressedImage && !window.bgSupabase?.getClient()
+                            ? await app.getVideoDataURL(compressedImage)
+                            : imageUrl,
+                        description: document.getElementById("product-description").value,
+                        trending: document.getElementById("product-trending").checked,
+                    };
+                    await app.addProduct(product, compressedImage);
+
+                    const msg = document.getElementById("success-message");
+                    msg.textContent = "✓ Article ajouté avec succès!";
+                    msg.className = "success-message";
+                    msg.style.display = "block";
+                    e.target.reset();
+                    setTimeout(() => {
+                        msg.style.display = "none";
+                    }, 3000);
                 } catch (error) {
                     const msg = document.getElementById("success-message");
                     msg.textContent = error.message || "Impossible d'ajouter l'article.";
                     msg.className = "error-message";
                     msg.style.display = "block";
-                    submitButton.disabled = false;
-                    return;
                 } finally {
                     submitButton.disabled = false;
                 }
-
-                // Show success message
-                const msg = document.getElementById("success-message");
-                msg.textContent = "✓ Article ajouté avec succès!";
-                msg.className = "success-message";
-                msg.style.display = "block";
-
-                // Reset form
-                e.target.reset();
-
-                setTimeout(() => {
-                    msg.style.display = "none";
-                }, 3000);
             }
 
-            function readImageFile(file) {
-                return new Promise((resolve, reject) => {
-                    const reader = new FileReader();
-                    reader.onload = () => resolve(reader.result);
-                    reader.onerror = () => reject(new Error("Impossible de lire l'image."));
-                    reader.readAsDataURL(file);
-                });
-            }
-
+            let productImagePreviewUrl = null;
             document.getElementById("product-image-file").addEventListener("change", (e) => {
                 const file = e.target.files[0];
                 const preview = document.getElementById("product-image-preview");
 
+                if (productImagePreviewUrl) URL.revokeObjectURL(productImagePreviewUrl);
+                productImagePreviewUrl = null;
                 if (!file) {
                     preview.removeAttribute("src");
                     preview.style.display = "none";
                     return;
                 }
 
-                preview.src = URL.createObjectURL(file);
+                productImagePreviewUrl = URL.createObjectURL(file);
+                preview.src = productImagePreviewUrl;
                 preview.style.display = "block";
             });
 
             document.getElementById("product-form").addEventListener("reset", () => {
                 const preview = document.getElementById("product-image-preview");
+                if (productImagePreviewUrl) URL.revokeObjectURL(productImagePreviewUrl);
+                productImagePreviewUrl = null;
                 preview.removeAttribute("src");
                 preview.style.display = "none";
             });
@@ -1233,13 +1224,12 @@
                     message.textContent = "Compression et chargement en cours...";
 
                     const compressedFile = await app.compressVideoFile(file);
-                    const videoUrl = await app.getVideoDataURL(compressedFile);
 
                     await app.addVideo({
                         title,
                         price,
                         description,
-                        videoUrl,
+                        videoFile: compressedFile,
                         originalName: file.name,
                         duration: compressedFile.duration || null,
                     });

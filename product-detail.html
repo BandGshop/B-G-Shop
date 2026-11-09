@@ -325,6 +325,7 @@
         <script src="js/app.js"></script>
         <script>
             let currentProductId = null;
+            let productCatalogLoaded = false;
             const escapeHtml = (value) => String(value ?? "").replace(/[&<>"']/g, (character) => ({
                 "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
             })[character]);
@@ -341,7 +342,7 @@
 
                 if (!product) {
                     document.getElementById("product-container").innerHTML =
-                        '<p style="grid-column: 1/-1; text-align: center;">Produit non trouvé</p>';
+                        `<p style="grid-column: 1/-1; text-align: center;" role="status">${productCatalogLoaded ? "Produit non trouvé" : "Chargement du produit…"}</p>`;
                     return;
                 }
 
@@ -567,14 +568,10 @@
                         document.getElementById("promo-status").textContent = "Le code promo n’est plus valide.";
                         throw new Error("Vérifiez le montant avant de renvoyer la commande.");
                     }
-                    const paymentProof = paymentMethod === "mobile_money" && proofFile
-                    ? await new Promise((resolve, reject) => {
-                        const reader = new FileReader();
-                        reader.onload = () => resolve(reader.result);
-                        reader.onerror = () => reject(new Error("Impossible de lire la preuve de paiement."));
-                        reader.readAsDataURL(proofFile);
-                    })
-                    : null;
+                    const compressedProof = paymentMethod === "mobile_money" && proofFile
+                        ? await app.compressImageFile(proofFile, 1280, 0.78)
+                        : null;
+                    const paymentProof = compressedProof ? await app.getVideoDataURL(compressedProof) : null;
 
                 const order = {
                     customerName: document.getElementById("order-name").value,
@@ -613,7 +610,14 @@
 
             // Initialize
             document.addEventListener("DOMContentLoaded", async () => {
+                currentProductId = getProductIdFromUrl();
+                if (app.getProduct(currentProductId)) loadProductDetail();
+                window.addEventListener("bgshop-products-synced", () => {
+                    productCatalogLoaded = true;
+                    loadProductDetail();
+                });
                 await app.ready?.catch((error) => console.error("Échec du chargement Supabase :", error));
+                productCatalogLoaded = true;
                 loadProductDetail();
                 togglePaymentFields();
             });

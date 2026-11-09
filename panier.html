@@ -147,12 +147,8 @@
       submit.disabled = true;
       status.textContent = 'Envoi de la commande…';
       try {
-        const paymentProof = proofFile ? await new Promise((resolve, reject) => {
-          const reader = new FileReader();
-          reader.onload = () => resolve(reader.result);
-          reader.onerror = () => reject(new Error('Impossible de lire la preuve de paiement.'));
-          reader.readAsDataURL(proofFile);
-        }) : null;
+        const compressedProof = proofFile ? await app.compressImageFile(proofFile, 1280, 0.78) : null;
+        const paymentProof = compressedProof ? await app.getVideoDataURL(compressedProof) : null;
         const subtotal = products.reduce((sum, product) => sum + Number(product.price || 0), 0);
         const promo = currentCartPromo
           ? await app.applyPromoToAmount(subtotal, currentCartPromo.code)

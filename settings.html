@@ -95,7 +95,7 @@
       if (!file.type.startsWith('image/') || file.size > 5 * 1024 * 1024) {
         return Promise.reject(new Error('Choisissez une image de 5 Mo maximum.'));
       }
-      return app.getVideoDataURL(file);
+      return app.compressImageFile(file).then((image) => app.getVideoDataURL(image));
     }
     function renderHelp() { const requests = app.getMessages().filter((message) => message.receiver === 'admin'); $('help-list').innerHTML = requests.length ? requests.map((message) => `<article class="settings-item"><strong>${escapeHtml(message.userEmail)}</strong><p>${escapeHtml(message.text)}</p><small>${new Date(message.createdDate).toLocaleString()}</small></article>`).join('') : '<p class="settings-empty">Aucune demande.</p>'; }
     function renderAdManagement() { const selected = app.getAdVideoIds(); const videos = app.getAdManagementVideos(); $('ad-video-list').innerHTML = videos.length ? videos.map((video) => `<label class="settings-item settings-choice"><input type="checkbox" value="${video.id}" ${selected.includes(video.id) ? 'checked' : ''}><span>${app.getAdMediaType(video) === 'image' ? 'Photo' : 'Vidéo'} : ${escapeHtml(video.title)}</span></label>`).join('') : '<p class="settings-empty">Aucune publicité.</p>'; }
@@ -107,8 +107,8 @@
       try {
         for (const file of mediaFiles) {
           const mediaFile = file.type.startsWith('video/') ? await app.compressVideoFile(file) : file;
-          const videoUrl = await app.getVideoDataURL(mediaFile);
-          const video = await app.addAdVideo({ title: file.name.replace(/\.[^/.]+$/, ''), description: 'Publicité B&G Shop', videoUrl, mediaType: file.type.startsWith('image/') ? 'image' : 'video', originalName: file.name, duration: mediaFile.duration || null });
+          const compressedFile = file.type.startsWith('image/') ? await app.compressImageFile(mediaFile) : mediaFile;
+          const video = await app.addAdVideo({ title: file.name.replace(/\.[^/.]+$/, ''), description: 'Publicité B&G Shop', videoFile: compressedFile, mediaType: file.type.startsWith('image/') ? 'image' : 'video', originalName: file.name, duration: mediaFile.duration || null });
           if (!adVideoIds.includes(video.id)) adVideoIds.push(video.id);
         }
         await app.setAdVideoIds(adVideoIds); renderAdManagement(); $('ad-upload-form').reset(); status.textContent = 'Médias importés et ajoutés à la barre publicitaire.';

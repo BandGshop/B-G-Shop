@@ -200,6 +200,8 @@ function applySiteLanguage(language) {
 
 const app = {
   pendingVideoViews: new Set(),
+  productsChannel: null,
+  productsSyncVersion: 0,
 
   // Initialize app data
   init() {
@@ -228,6 +230,7 @@ const app = {
     } else {
       localStorage.removeItem('bgshop_currentUser');
     }
+    this.subscribeToProducts(client);
     await this.syncProductsFromSupabase();
 
     const currentUser = this.checkAuth();
@@ -362,26 +365,69 @@ const app = {
   async syncProductsFromSupabase() {
     const client = window.bgSupabase?.getClient();
     if (!client) return;
-    const [{ data, error }, { data: productViews }] = await Promise.all([
-      client
+    const syncVersion = ++this.productsSyncVersion;
+    const { data, error } = await client
       .from('products')
-      .select('*')
-      .order('created_at', { ascending: false }),
-      client.from('product_views').select('product_id, user_id, created_at')
-    ]);
+      .select('id, title, category, price, image, description, trending, created_at')
+      .order('created_at', { ascending: false });
+    if (syncVersion !== this.productsSyncVersion) return;
     if (error || !data) {
       console.error('Supabase produits indisponibles.', error?.message);
+      window.dispatchEvent(new CustomEvent('bgshop-products-sync-error', {
+        detail: { message: error?.message || 'Supabase n’a retourné aucun article.' }
+      }));
       return;
     }
-    localStorage.setItem('bgshop_products', JSON.stringify(data.map((product) => ({
+    const products = data.map((product) => ({
       ...product,
       postedDate: product.created_at,
-      views: (productViews || []).filter((view) => view.product_id === product.id).map((view) => ({
-        userId: view.user_id,
-        date: view.created_at
-      }))
+      views: []
+    }));
+    localStorage.setItem('bgshop_products', JSON.stringify(products));
+    window.dispatchEvent(new CustomEvent('bgshop-products-synced'));
+
+    if (this.checkAuth()?.role !== 'admin') return;
+    const { data: productViews, error: viewsError } = await client
+      .from('product_views')
+      .select('product_id, user_id, created_at');
+    if (syncVersion !== this.productsSyncVersion) return;
+    if (viewsError) {
+      console.error('Impossible de charger les vues des articles.', viewsError.message);
+      return;
+    }
+    const viewsByProduct = new Map();
+    for (const view of productViews || []) {
+      const views = viewsByProduct.get(view.product_id) || [];
+      views.push({ userId: view.user_id, date: view.created_at });
+      viewsByProduct.set(view.product_id, views);
+    }
+    localStorage.setItem('bgshop_products', JSON.stringify(products.map((product) => ({
+      ...product,
+      views: viewsByProduct.get(product.id) || []
     }))));
     window.dispatchEvent(new CustomEvent('bgshop-products-synced'));
+  },
+
+  subscribeToProducts(client) {
+    if (this.productsChannel || !client.channel) return;
+    this.productsChannel = client.channel('bgshop-products')
+      .on('postgres_changes', {
+        event: '*',
+        schema: 'public',
+        table: 'products'
+      }, () => {
+        this.syncProductsFromSupabase().catch((error) => {
+          console.error('Impossible de synchroniser les articles publiés.', error);
+          window.dispatchEvent(new CustomEvent('bgshop-products-sync-error', {
+            detail: { message: error.message }
+          }));
+        });
+      })
+      .subscribe((status) => {
+        if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
+          console.warn('La mise à jour en temps réel des articles est indisponible.');
+        }
+      });
   },
 
   // Ensure default data exists in localStorage
@@ -1063,7 +1109,7 @@ const app = {
     const user = this.checkAuth();
     if (client) {
       if (!user?.id || user.role !== 'admin') throw new Error('Seul un administrateur peut publier une publicité.');
-      const blob = await fetch(video.videoUrl).then((response) => response.blob());
+      const blob = video.videoFile || await fetch(video.videoUrl).then((response) => response.blob());
       const path = `${user.id}/ads-${Date.now()}-${(video.originalName || 'video.webm').replace(/[^a-z0-9._-]/gi, '_')}`;
       const { error: uploadError } = await client.storage.from('videos').upload(path, blob, { contentType: blob.type, upsert: false });
       if (uploadError) throw new Error(`Impossible de charger la publicité : ${uploadError.message}`);
@@ -1082,10 +1128,12 @@ const app = {
       video.videoUrl = data.video_url;
       video.mediaType = this.getAdMediaType(video);
     } else {
+      if (video.videoFile) video.videoUrl = await this.getVideoDataURL(video.videoFile);
       video.id = Math.max(...ads.map((ad) => ad.id || 0), 0) + 1;
       video.postedDate = new Date().toISOString();
       video.mediaType = this.getAdMediaType(video);
     }
+    delete video.videoFile;
     ads.push(video);
     localStorage.setItem('bgshop_ad_videos', JSON.stringify(ads));
     return video;
@@ -1145,8 +1193,8 @@ const app = {
     if (client) {
       if (!user?.id) throw new Error('Vous devez être connecté pour publier une vidéo.');
       let videoUrl = video.videoUrl;
-      if (videoUrl?.startsWith('data:')) {
-        const blob = await fetch(videoUrl).then((response) => response.blob());
+      if (video.videoFile || videoUrl?.startsWith('data:')) {
+        const blob = video.videoFile || await fetch(videoUrl).then((response) => response.blob());
         const path = `${user.id}/${Date.now()}-${(video.originalName || 'video.webm').replace(/[^a-z0-9._-]/gi, '_')}`;
         const { error: uploadError } = await client.storage.from('videos').upload(path, blob, { contentType: blob.type, upsert: false });
         if (uploadError) throw new Error(`Impossible de charger la vidéo : ${uploadError.message}`);
@@ -1164,10 +1212,12 @@ const app = {
       video.postedDate = data.created_at;
       video.videoUrl = data.video_url;
     } else {
+      if (video.videoFile) video.videoUrl = await this.getVideoDataURL(video.videoFile);
       video.id = Math.max(...videos.map((v) => v.id || 0), 0) + 1;
       video.postedDate = new Date().toISOString();
     }
 
+    delete video.videoFile;
     videos.push(video);
     localStorage.setItem('bgshop_videos', JSON.stringify(videos));
     return video;
@@ -1259,7 +1309,7 @@ const app = {
 
   async compressVideoFile(file) {
     if (!file || !file.type.startsWith('video/')) return file;
-    if (file.size <= 7 * 1024 * 1024) return file;
+    if (file.size <= 1024 * 1024) return file;
     if (!window.MediaRecorder || !HTMLVideoElement.prototype.captureStream) {
       return file;
     }
@@ -1340,6 +1390,55 @@ const app = {
     }
 
     return file;
+  },
+
+  async compressImageFile(file, maxDimension = 1600, quality = 0.82) {
+    if (!file?.type?.startsWith('image/')) throw new Error('Le fichier sélectionné doit être une image.');
+
+    const loadImageElement = async () => {
+      const objectUrl = URL.createObjectURL(file);
+      return new Promise((resolve, reject) => {
+        const imageElement = new Image();
+        imageElement.onload = () => resolve(imageElement);
+        imageElement.onerror = () => reject(new Error('Impossible de lire l’image sélectionnée.'));
+        imageElement.src = objectUrl;
+      }).finally(() => URL.revokeObjectURL(objectUrl));
+    };
+    let image;
+    try {
+      image = typeof createImageBitmap === 'function'
+        ? await createImageBitmap(file)
+        : await loadImageElement();
+    } catch (error) {
+      if (typeof createImageBitmap !== 'function') throw error;
+      image = await loadImageElement();
+    }
+
+    try {
+      const width = image.width || image.naturalWidth;
+      const height = image.height || image.naturalHeight;
+      const scale = Math.min(1, maxDimension / Math.max(width, height));
+      const canvas = document.createElement('canvas');
+      canvas.width = Math.max(1, Math.round(width * scale));
+      canvas.height = Math.max(1, Math.round(height * scale));
+      const context = canvas.getContext('2d');
+      if (!context) throw new Error('La compression d’image n’est pas disponible sur cet appareil.');
+      context.drawImage(image, 0, 0, canvas.width, canvas.height);
+      const compressed = await new Promise((resolve, reject) => {
+        canvas.toBlob(
+          (blob) => blob ? resolve(blob) : reject(new Error('Impossible de compresser l’image.')),
+          'image/jpeg',
+          quality
+        );
+      });
+      if (compressed.size >= file.size && scale === 1) return file;
+      return new File([compressed], file.name.replace(/\.[^.]+$/, '.jpg'), {
+        type: 'image/jpeg',
+        lastModified: file.lastModified
+      });
+    } finally {
+      image.close?.();
+    }
   },
 
   async getVideoDataURL(file) {

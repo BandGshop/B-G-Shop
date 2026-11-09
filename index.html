@@ -150,23 +150,39 @@
         function renderCategories() {
             document.getElementById('category-strip').innerHTML = app.getCategories().map((category) => `<a href="categories.html?category=${encodeURIComponent(category.name)}">${escapeHtml(category.name)}</a>`).join('');
         }
+        let productsLoaded = false;
+        let productsLoadFailed = false;
         function renderProducts() {
             const query = document.getElementById('product-search').value.trim().toLowerCase();
             const products = app.getProducts().filter((product) => !query || `${product.title} ${product.category} ${product.description}`.toLowerCase().includes(query));
             document.getElementById('result-count').textContent = `${products.length} article${products.length > 1 ? 's' : ''}`;
-            document.getElementById('trending-products').innerHTML = products.length ? products.map((product) => `<article class="market-card" onclick="goToProduct(${product.id})"><img src="${escapeHtml(product.image)}" alt="${escapeHtml(product.title)}" /><div class="market-card-info"><div class="market-card-category">${escapeHtml(product.category)}</div><h3>${escapeHtml(product.title)}</h3><p>${escapeHtml(product.description).slice(0, 72)}...</p><div class="market-card-footer"><div class="market-price">${product.price} FCFA</div><button class="cart-add" onclick="event.stopPropagation(); addToCart(${product.id})">Ajouter</button></div></div></article>`).join('') : '<p>Aucun article ne correspond à votre recherche.</p>';
+            document.getElementById('trending-products').innerHTML = products.length ? products.map((product, index) => `<article class="market-card" onclick="goToProduct(${Number(product.id)})"><img src="${escapeHtml(product.image || 'images/ad-placeholder.svg')}" alt="${escapeHtml(product.title)}" width="640" height="420" loading="${index === 0 ? 'eager' : 'lazy'}" decoding="async" ${index === 0 ? 'fetchpriority="high"' : ''} /><div class="market-card-info"><div class="market-card-category">${escapeHtml(product.category)}</div><h3>${escapeHtml(product.title)}</h3><p>${escapeHtml(product.description).slice(0, 72)}...</p><div class="market-card-footer"><div class="market-price">${Number(product.price)} FCFA</div><button class="cart-add" onclick="event.stopPropagation(); addToCart(${Number(product.id)})">Ajouter</button></div></div></article>`).join('') : productsLoadFailed ? '<p role="alert">Impossible de charger les articles. Vérifiez votre connexion et réessayez.</p>' : productsLoaded ? '<p>Aucun article ne correspond à votre recherche.</p>' : '<p role="status">Chargement des articles…</p>';
         }
         function addToCart(productId) { app.addToCart(productId); window.location.href = 'panier.html'; }
         function goToProduct(productId) { window.location.href = `product-detail.html?id=${productId}`; }
         function openMessages() { window.location.href = app.checkAuth() ? 'messages.html' : 'login.html'; }
         document.addEventListener('DOMContentLoaded', async () => {
             const splash = document.getElementById('site-splash');
-            const splashDuration = window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 400 : 1800;
+            const splashDuration = 350;
             window.setTimeout(() => splash.classList.add('is-hidden'), splashDuration);
             renderCategories();
+            renderProducts();
             document.getElementById('product-search').addEventListener('input', renderProducts);
-            window.addEventListener('bgshop-products-synced', renderProducts);
-            await app.ready?.catch((error) => console.error('Échec du chargement Supabase :', error));
+            window.addEventListener('bgshop-products-synced', () => {
+                productsLoaded = true;
+                renderProducts();
+            });
+            window.addEventListener('bgshop-products-sync-error', (event) => {
+                productsLoaded = true;
+                productsLoadFailed = true;
+                renderProducts();
+            });
+            await app.ready?.catch((error) => {
+                productsLoadFailed = true;
+                console.error('Échec du chargement Supabase :', error);
+            });
+            if (!productsLoaded && window.bgSupabase?.getClient()) productsLoadFailed = true;
+            productsLoaded = true;
             renderProducts();
             const ads = app.getAdVideos();
             if (ads.length) {

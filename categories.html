@@ -310,7 +310,6 @@
             }
 
             document.addEventListener("DOMContentLoaded", async () => {
-                await app.ready?.catch((error) => console.error("Échec du chargement Supabase :", error));
                 const requestedCategory = new URLSearchParams(window.location.search).get("category");
                 const knownCategories = app.getCategories().flatMap((category) => [category.name, ...(category.subcategories || [])]);
                 if (knownCategories.includes(requestedCategory)) currentCategory = requestedCategory;
@@ -321,6 +320,8 @@
                     button.classList.toggle("active", category === (currentCategory || "Tous les produits"));
                 });
                 window.addEventListener("bgshop-products-synced", loadProducts);
+                await app.ready?.catch((error) => console.error("Échec du chargement Supabase :", error));
+                loadProducts();
             });
         </script>
     </body>

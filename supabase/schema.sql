@@ -52,6 +52,22 @@ create table public.products (
   created_at timestamptz not null default now()
 );
 
+create index products_created_at_idx on public.products(created_at desc);
+
+do $$
+begin
+  if exists (select 1 from pg_publication where pubname = 'supabase_realtime')
+    and not exists (
+      select 1 from pg_publication_tables
+      where pubname = 'supabase_realtime'
+        and schemaname = 'public'
+        and tablename = 'products'
+    ) then
+    execute 'alter publication supabase_realtime add table public.products';
+  end if;
+end;
+$$;
+
 create table public.product_views (
   product_id bigint not null references public.products(id) on delete cascade,
   user_id uuid not null references public.profiles(id) on delete cascade,

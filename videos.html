@@ -206,6 +206,50 @@
                 text-align: center;
             }
 
+            .order-modal {
+                display: none;
+                position: fixed;
+                inset: 0;
+                z-index: 1200;
+                align-items: center;
+                justify-content: center;
+                padding: 1rem;
+                background: rgba(0, 0, 0, 0.72);
+            }
+
+            .order-modal.open {
+                display: flex;
+            }
+
+            .order-dialog {
+                width: min(500px, 100%);
+                padding: 1.5rem;
+                border-radius: 16px;
+                background: var(--bg-2);
+            }
+
+            .order-dialog h2 {
+                margin-top: 0;
+            }
+
+            .order-dialog form {
+                display: grid;
+                gap: 0.8rem;
+            }
+
+            .order-dialog input,
+            .order-dialog textarea {
+                width: 100%;
+                padding: 0.7rem;
+                border: 1px solid var(--bordure);
+                border-radius: 8px;
+            }
+
+            .order-actions {
+                display: flex;
+                gap: 0.75rem;
+            }
+
             @media (max-width: 700px) {
                 .navbar {
                     flex-direction: column;
@@ -252,10 +296,30 @@
             <section id="videos-feed" class="videos-feed" aria-live="polite"></section>
         </main>
 
+        <div id="order-modal" class="order-modal" role="dialog" aria-modal="true" aria-labelledby="order-title">
+            <div class="order-dialog">
+                <h2 id="order-title">Commander</h2>
+                <p id="order-video-title"></p>
+                <p id="order-video-price"></p>
+                <form id="order-form">
+                    <label>Votre nom complet <input id="order-name" required /></label>
+                    <label>Téléphone <input id="order-phone" type="tel" required /></label>
+                    <label>Adresse de livraison <textarea id="order-address" required></textarea></label>
+                    <div class="order-actions">
+                        <button class="btn btn-primaire" type="submit">Envoyer la commande</button>
+                        <button class="btn btn-secondaire" type="button" onclick="closeOrderModal()">Annuler</button>
+                    </div>
+                    <p id="order-status" role="status" aria-live="polite"></p>
+                </form>
+            </div>
+        </div>
+
         <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
         <script src="js/supabase-client.js"></script>
         <script src="js/app.js"></script>
         <script>
+            let selectedVideo = null;
+
             function requireUser() {
                 const user = app.checkAuth();
                 if (!user) {
@@ -331,6 +395,59 @@
                 }
             }
 
+            function openOrderModal(videoId) {
+                const user = requireUser();
+                if (!user) return;
+                selectedVideo = app.getVideoById(videoId);
+                if (!selectedVideo || selectedVideo.price == null || !Number.isFinite(Number(selectedVideo.price)) || Number(selectedVideo.price) < 0) {
+                    alert("Le prix de cet article n’est pas encore disponible.");
+                    return;
+                }
+                document.getElementById("order-video-title").textContent = selectedVideo.title;
+                document.getElementById("order-video-price").textContent = `${Number(selectedVideo.price)} FCFA`;
+                document.getElementById("order-name").value = user.name || "";
+                document.getElementById("order-status").textContent = "";
+                document.getElementById("order-modal").classList.add("open");
+            }
+
+            function closeOrderModal() {
+                document.getElementById("order-modal").classList.remove("open");
+                selectedVideo = null;
+            }
+
+            async function submitOrder(event) {
+                event.preventDefault();
+                const user = requireUser();
+                if (!user || !selectedVideo) return;
+                const submitButton = event.currentTarget.querySelector('button[type="submit"]');
+                const status = document.getElementById("order-status");
+                submitButton.disabled = true;
+                status.textContent = "Envoi de la commande…";
+                try {
+                    await app.addOrder({
+                        customerName: document.getElementById("order-name").value.trim(),
+                        customerPhone: document.getElementById("order-phone").value.trim(),
+                        customerAddress: document.getElementById("order-address").value.trim(),
+                        userId: user.id,
+                        userEmail: user.email,
+                        items: [{
+                            productId: null,
+                            productTitle: selectedVideo.title,
+                            productPrice: Number(selectedVideo.price),
+                            quantity: 1
+                        }],
+                        finalTotal: Number(selectedVideo.price)
+                    });
+                    alert("Commande envoyée avec succès !");
+                    document.getElementById("order-form").reset();
+                    closeOrderModal();
+                } catch (error) {
+                    status.textContent = error.message || "Impossible d’envoyer la commande.";
+                } finally {
+                    submitButton.disabled = false;
+                }
+            }
+
             function renderVideos() {
                 const videos = app.getVideos().slice().sort((a, b) => new Date(b.postedDate) - new Date(a.postedDate));
                 const feed = document.getElementById("videos-feed");
@@ -354,10 +471,12 @@
                                 <button class="video-action ${liked ? "active" : ""}" onclick="toggleLike(${video.id})" title="J'aime">♥<small>${likes.length}</small></button>
                                 <button class="video-action" onclick="toggleComments(${video.id})" title="Commentaires">💬<small>${comments.length}</small></button>
                                 <button class="video-action ${favorited ? "active" : ""}" onclick="toggleFavorite(${video.id})" title="Ajouter aux favoris">★</button>
+                                ${video.price != null && Number.isFinite(Number(video.price)) ? `<button class="video-action" onclick="openOrderModal(${video.id})" title="Commander">🛒</button>` : ""}
                             </div>
                             <div class="video-card-content">
                                 <h2>${escapeVideoHtml(video.title)}</h2>
                                 <p>${escapeVideoHtml(video.description)}</p>
+                                ${video.price != null && Number.isFinite(Number(video.price)) ? `<strong>${Number(video.price)} FCFA</strong>` : ""}
                                 <span class="video-date">Publiée le ${new Date(video.postedDate).toLocaleDateString("fr-FR")}</span>
                             </div>
                             <div id="comments-${video.id}" class="comments-panel">
@@ -382,6 +501,7 @@
             document.addEventListener("DOMContentLoaded", async () => {
                 await app.ready?.catch((error) => console.error("Échec du chargement Supabase :", error));
                 updateAuthUI();
+                document.getElementById("order-form").addEventListener("submit", submitOrder);
                 renderVideos();
                 window.addEventListener("bgshop-data-synced", renderVideos);
                 const videoObserver = new IntersectionObserver((entries) => {

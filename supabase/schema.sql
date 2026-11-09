@@ -102,6 +102,7 @@ create table public.videos (
   author_id uuid references public.profiles(id) on delete set null,
   title text not null,
   description text not null default '',
+  price numeric(12, 2) check (price >= 0),
   video_url text not null,
   thumbnail_url text,
   created_at timestamptz not null default now()

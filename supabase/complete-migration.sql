@@ -51,6 +51,7 @@ alter table public.orders add column if not exists discount_percent numeric(5,2)
 alter table public.orders add column if not exists discount_amount numeric(12,2) not null default 0;
 alter table public.orders add column if not exists partner_name text;
 alter table public.orders add column if not exists final_total numeric(12,2) not null default 0;
+alter table public.videos add column if not exists price numeric(12,2) check (price >= 0);
 drop policy if exists orders_delete_admin on public.orders;
 create policy orders_delete_admin on public.orders for delete to authenticated using (public.is_admin());
 alter table public.payment_numbers enable row level security;

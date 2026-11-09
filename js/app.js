@@ -291,6 +291,7 @@ const app = {
         id: video.id,
         title: video.title,
         description: video.description,
+        price: video.price,
         videoUrl: video.video_url,
         postedDate: video.created_at,
         views: (views || []).filter((item) => item.video_id === video.id).map((item) => ({ userId: item.user_id, date: item.created_at })),
@@ -1129,6 +1130,12 @@ const app = {
   },
 
   async addVideo(video) {
+    const price = Number(video.price);
+    if (!video.title?.trim() || !video.description?.trim() || video.price == null || video.price === ''
+      || !Number.isFinite(price) || price < 0) {
+      throw new Error('Le nom, la description et un prix valide sont requis pour publier une vidéo.');
+    }
+    video.price = price;
     const videos = this.getVideos();
     video.views = [];
     video.likes = [];
@@ -1149,6 +1156,7 @@ const app = {
         author_id: user.id,
         title: video.title,
         description: video.description,
+        price,
         video_url: videoUrl
       }).select('*').single();
       if (error) throw new Error(`Impossible d’enregistrer la vidéo : ${error.message}`);

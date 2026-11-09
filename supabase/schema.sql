@@ -4,6 +4,10 @@ insert into storage.buckets (id, name, public)
 values ('videos', 'videos', true)
 on conflict (id) do nothing;
 
+insert into storage.buckets (id, name, public)
+values ('product-images', 'product-images', true)
+on conflict (id) do nothing;
+
 create type public.user_role as enum ('user', 'admin');
 create type public.order_status as enum ('pending', 'completed', 'cancelled');
 create type public.payment_method as enum ('mobile_money', 'cash_on_delivery');
@@ -352,3 +356,10 @@ create policy video_storage_upload_authenticated on storage.objects
 for insert to authenticated with check (bucket_id = 'videos');
 create policy video_storage_delete_admin on storage.objects
 for delete to authenticated using (bucket_id = 'videos' and public.is_admin());
+
+create policy product_images_read_public on storage.objects
+for select using (bucket_id = 'product-images');
+create policy product_images_upload_admin on storage.objects
+for insert to authenticated with check (bucket_id = 'product-images' and public.is_admin());
+create policy product_images_delete_admin on storage.objects
+for delete to authenticated using (bucket_id = 'product-images' and public.is_admin());

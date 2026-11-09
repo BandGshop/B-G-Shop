@@ -788,7 +788,7 @@
                 const submitButton = e.target.querySelector('button[type="submit"]');
                 submitButton.disabled = true;
                 try {
-                    await app.addProduct(product);
+                    await app.addProduct(product, imageFile);
                 } catch (error) {
                     const msg = document.getElementById("success-message");
                     msg.textContent = error.message || "Impossible d'ajouter l'article.";

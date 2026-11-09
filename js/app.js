@@ -766,7 +766,7 @@ const app = {
     return isAdding;
   },
 
-  async addProduct(product) {
+  async addProduct(product, imageFile) {
     const products = this.getProducts();
     const client = window.bgSupabase?.getClient();
     if (client) {
@@ -779,6 +779,16 @@ const app = {
         throw new Error('Seul un administrateur peut publier un article.');
       }
       const sellerId = authData.user.id;
+      if (imageFile) {
+        const imagePath = `${sellerId}/${Date.now()}-${Math.random().toString(36).slice(2)}`;
+        const { error: uploadError } = await client.storage
+          .from('product-images')
+          .upload(imagePath, imageFile, { contentType: imageFile.type });
+        if (uploadError) {
+          throw new Error(`Impossible d’envoyer l’image de l’article : ${uploadError.message}`);
+        }
+        product.image = client.storage.from('product-images').getPublicUrl(imagePath).data.publicUrl;
+      }
       const { data, error } = await client.from('products').insert({
         seller_id: sellerId,
         title: product.title,

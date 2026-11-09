@@ -614,8 +614,11 @@ const app = {
     const product = products.find((item) => item.id === productId);
     if (!product) return null;
     product.views = Array.isArray(product.views) ? product.views : [];
-    if (!product.views.some((view) => view.userEmail === user.email)) {
+    if (!product.views.some((view) =>
+      (user.id && String(view.userId) === String(user.id)) || view.userEmail === user.email
+    )) {
       product.views.push({
+        userId: user.id,
         userEmail: user.email,
         name: user.name,
         date: new Date().toISOString()

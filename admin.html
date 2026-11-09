@@ -988,8 +988,14 @@
             }
 
             async function loadPromoCodes() {
-                const promoCodes = await app.getPromoCodes();
                 const container = document.getElementById('promo-codes-list');
+                let promoCodes;
+                try {
+                    promoCodes = await app.getPromoCodes();
+                } catch (error) {
+                    container.innerHTML = `<p role="alert">${escapeHtml(error.message || 'Impossible de charger les codes promo.')}</p>`;
+                    return;
+                }
                 if (!promoCodes.length) {
                     container.innerHTML = '<p>Aucun code promo enregistré.</p>';
                     return;
@@ -1032,78 +1038,94 @@
                     return;
                 }
 
-                const currentCodes = await app.getPromoCodes();
-                const existing = currentCodes.find((item) => app.normalizePromoCode(item.code) === code);
-                if (existing) {
-                    alert('Ce code promo existe déjà.');
-                    return;
-                }
+                try {
+                    const currentCodes = await app.getPromoCodes();
+                    const existing = currentCodes.find((item) => app.normalizePromoCode(item.code) === code);
+                    if (existing) {
+                        alert('Ce code promo existe déjà.');
+                        return;
+                    }
 
-                const promo = {
-                    id: Date.now(),
-                    code,
-                    partner_name: partnerName,
-                    partnerName,
-                    discount_percent: discountPercent,
-                    discountPercent,
-                    description,
-                    active: true,
-                    expires_at: expiresAt,
-                    expiresAt,
-                    created_at: new Date().toISOString(),
-                    createdAt: new Date().toISOString()
-                };
-
-                const updatedCodes = [promo, ...currentCodes];
-                localStorage.setItem('bgshop_promo_codes', JSON.stringify(updatedCodes));
-                const client = window.bgSupabase?.getClient();
-                if (client) {
-                    const { error } = await client.from('promo_codes').insert({
-                        code: promo.code,
+                    const expiresAtValue = expiresAt ? new Date(`${expiresAt}T23:59:59`).toISOString() : null;
+                    const client = window.bgSupabase?.getClient();
+                    let promo = {
+                        id: Date.now(),
+                        code,
                         partner_name: partnerName,
+                        partnerName,
                         discount_percent: discountPercent,
+                        discountPercent,
                         description,
                         active: true,
-                        expires_at: expiresAt ? new Date(expiresAt).toISOString() : null
-                    });
-                    if (error) {
-                        alert(error.message || 'Le code promo a été sauvegardé localement mais n’a pas pu être synchronisé avec Supabase.');
+                        expires_at: expiresAtValue,
+                        expiresAt: expiresAtValue,
+                        created_at: new Date().toISOString(),
+                        createdAt: new Date().toISOString()
+                    };
+                    if (client) {
+                        const { data, error } = await client.from('promo_codes').insert({
+                            code,
+                            partner_name: partnerName,
+                            discount_percent: discountPercent,
+                            description,
+                            active: true,
+                            expires_at: expiresAtValue
+                        }).select('*').single();
+                        if (error) throw error;
+                        promo = data;
                     }
+                    localStorage.setItem('bgshop_promo_codes', JSON.stringify([promo, ...currentCodes]));
+                    event.target.reset();
+                    await loadPromoCodes();
+                } catch (error) {
+                    alert(error.message || 'Impossible d’enregistrer le code promo.');
                 }
-                event.target.reset();
-                loadPromoCodes();
             }
 
             async function togglePromoCodeStatus(promoId, currentActive) {
-                const currentCodes = await app.getPromoCodes();
-                const updated = currentCodes.map((promo) => promo.id === promoId ? { ...promo, active: !currentActive } : promo);
-                localStorage.setItem('bgshop_promo_codes', JSON.stringify(updated));
-                const client = window.bgSupabase?.getClient();
-                if (client) {
-                    const { error } = await client.from('promo_codes').update({ active: !currentActive }).eq('id', promoId);
-                    if (error) alert(error.message || 'Impossible de mettre à jour le statut du code.');
+                try {
+                    const client = window.bgSupabase?.getClient();
+                    if (client) {
+                        const { error } = await client.from('promo_codes').update({ active: !currentActive }).eq('id', promoId);
+                        if (error) throw error;
+                    } else {
+                        const currentCodes = await app.getPromoCodes();
+                        const updated = currentCodes.map((promo) => promo.id === promoId ? { ...promo, active: !currentActive } : promo);
+                        localStorage.setItem('bgshop_promo_codes', JSON.stringify(updated));
+                    }
+                    await loadPromoCodes();
+                } catch (error) {
+                    alert(error.message || 'Impossible de mettre à jour le statut du code.');
                 }
-                loadPromoCodes();
             }
 
             async function deletePromoCode(promoId) {
                 if (!confirm('Supprimer ce code promo ?')) return;
-                const currentCodes = await app.getPromoCodes();
-                const updated = currentCodes.filter((promo) => promo.id !== promoId);
-                localStorage.setItem('bgshop_promo_codes', JSON.stringify(updated));
-                const client = window.bgSupabase?.getClient();
-                if (client) {
-                    const { error } = await client.from('promo_codes').delete().eq('id', promoId);
-                    if (error) alert(error.message || 'Impossible de supprimer le code promo.');
+                try {
+                    const client = window.bgSupabase?.getClient();
+                    if (client) {
+                        const { error } = await client.from('promo_codes').delete().eq('id', promoId);
+                        if (error) throw error;
+                    } else {
+                        const currentCodes = await app.getPromoCodes();
+                        localStorage.setItem('bgshop_promo_codes', JSON.stringify(currentCodes.filter((promo) => promo.id !== promoId)));
+                    }
+                    await loadPromoCodes();
+                } catch (error) {
+                    alert(error.message || 'Impossible de supprimer le code promo.');
                 }
-                loadPromoCodes();
             }
 
             async function loadPaymentNumbers() {
-                const numbers = await app.getPaymentNumbers();
-                document.getElementById("payment-numbers-list").innerHTML = numbers.length
-                    ? numbers.map((number) => `<div class="stat-card"><strong>${number.phone}</strong><p>${number.label || "Sans libellé"}</p><button class="btn btn-primaire" onclick="editPaymentNumber(${number.id}, '${number.phone}', '${(number.label || '').replace(/'/g, "\\'")}')">Modifier</button> <button class="btn btn-secondaire" onclick="removePaymentNumber(${number.id})">Retirer</button></div>`).join("")
-                    : '<p>Aucun numéro de paiement configuré.</p>';
+                const container = document.getElementById("payment-numbers-list");
+                try {
+                    const numbers = await app.getPaymentNumbers();
+                    container.innerHTML = numbers.length
+                        ? numbers.map((number) => `<div class="stat-card"><strong>${escapeHtml(number.phone)}</strong><p>${escapeHtml(number.label || "Sans libellé")}</p><button class="btn btn-primaire" onclick="editPaymentNumber(${Number(number.id)})">Modifier</button> <button class="btn btn-secondaire" onclick="removePaymentNumber(${Number(number.id)})">Retirer</button></div>`).join("")
+                        : '<p>Aucun numéro de paiement configuré.</p>';
+                } catch (error) {
+                    container.innerHTML = `<p role="alert">${escapeHtml(error.message || "Impossible de charger les numéros de paiement.")}</p>`;
+                }
             }
 
             async function addPaymentNumber(event) {
@@ -1121,7 +1143,17 @@
                 catch (error) { alert(error.message || "Impossible de retirer le numéro."); }
             }
 
-            async function editPaymentNumber(numberId, currentPhone, currentLabel) {
+            async function editPaymentNumber(numberId) {
+                let number;
+                try {
+                    number = (await app.getPaymentNumbers()).find((item) => String(item.id) === String(numberId));
+                } catch (error) {
+                    alert(error.message || "Impossible de charger le numéro.");
+                    return;
+                }
+                if (!number) return;
+                const currentPhone = number.phone;
+                const currentLabel = number.label || "";
                 const phone = prompt("Nouveau numéro MTN", currentPhone);
                 if (!phone) return;
                 const label = prompt("Nouveau libellé (facultatif)", currentLabel) || "";

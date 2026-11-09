@@ -74,18 +74,31 @@
     const $ = (id) => document.getElementById(id);
     function requireUser() { user = app.checkAuth(); if (!user) { window.location.href = 'login.html'; return false; } return true; }
     function applyLanguage(language) { document.documentElement.lang = language; const text = translations[language] || translations.fr; document.querySelectorAll('[data-i18n]').forEach((element) => { if (text[element.dataset.i18n]) element.textContent = text[element.dataset.i18n]; }); }
-    function card(item, type) { return `<article class="settings-item">${item.image ? `<img src="${item.image}" alt="${item.title || item.name || 'Contenu'}">` : ''}<h3>${item.title || item.name || 'Vidéo'}</h3><p>${type === 'order' ? `${item.status || 'pending'} · ${item.productPrice || 0} FCFA` : (item.description || '')}</p></article>`; }
+    const escapeHtml = (value) => String(value ?? '').replace(/[&<>"']/g, (character) => ({
+      '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+    })[character]);
+    function card(item, type) {
+      const title = type === 'order' ? item.productTitle : (item.title || item.name || 'Vidéo');
+      return `<article class="settings-item">${item.image ? `<img src="${escapeHtml(item.image)}" alt="${escapeHtml(title || 'Contenu')}">` : ''}<h3>${escapeHtml(title || 'Contenu')}</h3><p>${type === 'order' ? `${escapeHtml(item.status || 'pending')} · ${Number(item.finalTotal ?? item.productPrice ?? 0)} FCFA` : escapeHtml(item.description || '')}</p></article>`;
+    }
     function renderCollection(id, items, type) { $(id).innerHTML = items.length ? items.map((item) => card(item, type)).join('') : '<p class="settings-empty">Aucun contenu pour le moment.</p>'; }
     function renderContent() {
-      const products = app.getProducts(); const videos = app.getVideos(); const likedProductIds = app.getUserProductIds(user.email, 'liked').map(String); const favoriteProductIds = app.getUserProductIds(user.email, 'favorites').map(String); const likedVideos = videos.filter((video) => (video.likes || []).some((like) => like.userEmail === user.email)); const favoriteVideos = videos.filter((video) => app.getFavoriteVideoIds(user.email).includes(video.id));
+      const products = app.getProducts(); const videos = app.getVideos(); const likedProductIds = app.getUserProductIds(user.email, 'liked').map(String); const favoriteProductIds = app.getUserProductIds(user.email, 'favorites').map(String); const likedVideos = videos.filter((video) => (video.likes || []).some((like) => String(like.userId) === String(user.id) || like.userEmail === user.email)); const favoriteVideos = videos.filter((video) => app.getFavoriteVideoIds(user.email).includes(String(video.id)));
       renderCollection('liked-products', products.filter((product) => likedProductIds.includes(String(product.id)))); renderCollection('favorite-products', products.filter((product) => favoriteProductIds.includes(String(product.id)))); renderCollection('liked-videos', likedVideos); renderCollection('favorite-videos', favoriteVideos);
-      $('notifications-list').innerHTML = app.getNotifications().map((notification) => `<article class="settings-item"><h3>${notification.title}</h3><p>${notification.text}</p></article>`).join('') || '<p class="settings-empty">Aucune notification.</p>';
+      $('notifications-list').innerHTML = app.getNotifications().map((notification) => `<article class="settings-item"><h3>${escapeHtml(notification.title)}</h3><p>${escapeHtml(notification.text)}</p></article>`).join('') || '<p class="settings-empty">Aucune notification.</p>';
       $('orders-list').innerHTML = app.getOrders().filter((order) => order.userEmail === user.email).map((order) => card(order, 'order')).join('') || '<p class="settings-empty">Aucune commande.</p>';
     }
     function toggleOptions(prefix) { const type = $(prefix + '-bg-type').value; $(prefix + '-color-label').style.display = type === 'color' ? 'grid' : 'none'; $(prefix + '-image-label').style.display = type === 'image' ? 'grid' : 'none'; }
-    function readFile(input) { return input.files[0] ? app.getVideoDataURL(input.files[0]) : Promise.resolve(''); }
-    function renderHelp() { const requests = app.getMessages().filter((message) => message.receiver === 'admin'); $('help-list').innerHTML = requests.length ? requests.map((message) => `<article class="settings-item"><strong>${message.userEmail}</strong><p>${message.text}</p><small>${new Date(message.createdDate).toLocaleString()}</small></article>`).join('') : '<p class="settings-empty">Aucune demande.</p>'; }
-    function renderAdManagement() { const selected = app.getAdVideoIds(); const videos = app.getAdManagementVideos(); $('ad-video-list').innerHTML = videos.length ? videos.map((video) => `<label class="settings-item settings-choice"><input type="checkbox" value="${video.id}" ${selected.includes(video.id) ? 'checked' : ''}><span>${app.getAdMediaType(video) === 'image' ? 'Photo' : 'Vidéo'} : ${video.title}</span></label>`).join('') : '<p class="settings-empty">Aucune publicité.</p>'; }
+    function readFile(input) {
+      const file = input.files[0];
+      if (!file) return Promise.resolve('');
+      if (!file.type.startsWith('image/') || file.size > 5 * 1024 * 1024) {
+        return Promise.reject(new Error('Choisissez une image de 5 Mo maximum.'));
+      }
+      return app.getVideoDataURL(file);
+    }
+    function renderHelp() { const requests = app.getMessages().filter((message) => message.receiver === 'admin'); $('help-list').innerHTML = requests.length ? requests.map((message) => `<article class="settings-item"><strong>${escapeHtml(message.userEmail)}</strong><p>${escapeHtml(message.text)}</p><small>${new Date(message.createdDate).toLocaleString()}</small></article>`).join('') : '<p class="settings-empty">Aucune demande.</p>'; }
+    function renderAdManagement() { const selected = app.getAdVideoIds(); const videos = app.getAdManagementVideos(); $('ad-video-list').innerHTML = videos.length ? videos.map((video) => `<label class="settings-item settings-choice"><input type="checkbox" value="${video.id}" ${selected.includes(video.id) ? 'checked' : ''}><span>${app.getAdMediaType(video) === 'image' ? 'Photo' : 'Vidéo'} : ${escapeHtml(video.title)}</span></label>`).join('') : '<p class="settings-empty">Aucune publicité.</p>'; }
     async function importAdVideos(event) {
       event.preventDefault(); const files = [...$('ad-video-upload').files]; const status = $('ad-upload-status'); const adVideoIds = app.getAdVideoIds();
       const mediaFiles = files.filter((file) => file.type.startsWith('video/') || file.type.startsWith('image/'));
@@ -102,10 +115,9 @@
       } catch (error) { status.textContent = error.message || 'Impossible d’importer les vidéos.'; }
     }
     document.addEventListener('DOMContentLoaded', async () => {
-      if (!requireUser()) return; settings = app.getUserSettings(user.email); app.applyUserSettings(settings); applyLanguage(settings.language); $('language').value = settings.language; $('site-bg-type').value = settings.siteBackground.type; $('message-bg-type').value = settings.messageBackground.type; $('admin-settings-tab').style.display = user.role === 'admin' ? 'block' : 'none';
       await app.ready?.catch((error) => console.error('Échec du chargement Supabase :', error));
+      if (!requireUser()) return; settings = app.getUserSettings(user.email); app.applyUserSettings(settings); applyLanguage(settings.language); $('language').value = settings.language; $('site-bg-type').value = settings.siteBackground.type; $('message-bg-type').value = settings.messageBackground.type; $('admin-settings-tab').style.display = user.role === 'admin' ? 'block' : 'none';
       renderContent(); toggleOptions('site'); toggleOptions('message'); if (user.role === 'admin') { renderHelp(); renderAdManagement(); }
-      if (user.role === 'admin') renderAdManagement();
       document.querySelectorAll('.settings-nav button').forEach((button) => button.addEventListener('click', () => {
         document.querySelectorAll('.settings-nav button').forEach((navButton) => navButton.classList.remove('active'));
         document.querySelectorAll('.settings-section').forEach((section) => section.classList.remove('active'));
@@ -114,8 +126,40 @@
         if (section) section.classList.add('active');
       }));
       ['site','message'].forEach((prefix) => $(prefix + '-bg-type').addEventListener('change', () => toggleOptions(prefix)));
-      $('appearance-form').addEventListener('submit', async (event) => { event.preventDefault(); const siteImage = await readFile($('site-bg-image')); const messageImage = await readFile($('message-bg-image')); settings = { language: $('language').value, siteBackground: { type: $('site-bg-type').value, value: siteImage || ($('site-bg-type').value === 'image' ? settings.siteBackground.value : $('site-bg-color').value) }, messageBackground: { type: $('message-bg-type').value, value: messageImage || ($('message-bg-type').value === 'image' ? settings.messageBackground.value : $('message-bg-color').value) } }; try { await app.saveUserSettings(user.email, settings); applyLanguage(settings.language); $('appearance-status').textContent = 'Préférences enregistrées.'; } catch (error) { $('appearance-status').textContent = error.message || 'Impossible d’enregistrer les préférences.'; } });
-      $('password-form').addEventListener('submit', async (event) => { event.preventDefault(); $('password-status').textContent = await app.changeAdminPassword(user.email, $('current-password').value, $('new-password').value) ? 'Mot de passe modifié.' : 'Mot de passe actuel incorrect.'; });
+      $('appearance-form').addEventListener('submit', async (event) => {
+        event.preventDefault();
+        try {
+          const siteImage = await readFile($('site-bg-image'));
+          const messageImage = await readFile($('message-bg-image'));
+          const nextSettings = {
+            language: $('language').value,
+            siteBackground: {
+              type: $('site-bg-type').value,
+              value: siteImage || ($('site-bg-type').value === 'image' ? settings.siteBackground.value : $('site-bg-color').value)
+            },
+            messageBackground: {
+              type: $('message-bg-type').value,
+              value: messageImage || ($('message-bg-type').value === 'image' ? settings.messageBackground.value : $('message-bg-color').value)
+            }
+          };
+          await app.saveUserSettings(user.email, nextSettings);
+          settings = nextSettings;
+          applyLanguage(settings.language);
+          $('appearance-status').textContent = 'Préférences enregistrées.';
+        } catch (error) {
+          $('appearance-status').textContent = error.message || 'Impossible d’enregistrer les préférences.';
+        }
+      });
+      $('password-form').addEventListener('submit', async (event) => {
+        event.preventDefault();
+        try {
+          const changed = await app.changeAdminPassword(user.email, $('current-password').value, $('new-password').value);
+          $('password-status').textContent = changed ? 'Mot de passe modifié.' : 'Mot de passe actuel incorrect.';
+          if (changed) event.target.reset();
+        } catch (error) {
+          $('password-status').textContent = error.message || 'Impossible de modifier le mot de passe.';
+        }
+      });
       $('notification-form').addEventListener('submit', async (event) => { event.preventDefault(); try { await app.addNotification({ title: $('notification-title').value, text: $('notification-text').value }); $('notification-status').textContent = 'Notification envoyée à tous les utilisateurs.'; event.target.reset(); } catch (error) { $('notification-status').textContent = error.message || 'Impossible d’envoyer la notification.'; } });
       $('ad-upload-form').addEventListener('submit', importAdVideos);
       $('save-ad-videos').addEventListener('click', async () => { const ids = [...$('ad-video-list').querySelectorAll('input:checked')].map((input) => Number(input.value)); try { await app.setAdVideoIds(ids); $('ad-status').textContent = 'Barre de publicité mise à jour.'; } catch (error) { $('ad-status').textContent = error.message || 'Impossible de mettre à jour la publicité.'; } });

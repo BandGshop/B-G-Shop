@@ -54,6 +54,10 @@
     })[character]);
 
     async function applyCartPromo() {
+      if (!app.checkAuth()) {
+        document.getElementById('promo-message').textContent = 'Connectez-vous pour vérifier les codes promo.';
+        return;
+      }
       const products = app.getCart().map((id) => app.getProduct(id)).filter(Boolean);
       const subtotal = products.reduce((total, product) => total + Number(product.price || 0), 0);
       const code = document.getElementById('promo-code').value.trim();

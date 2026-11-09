@@ -230,10 +230,12 @@ const app = {
     }
     await this.syncProductsFromSupabase();
 
+    const currentUser = this.checkAuth();
     const { data: orders } = await client.from('orders').select('*, order_items(*)').order('created_at', { ascending: false });
     if (orders) localStorage.setItem('bgshop_orders', JSON.stringify(orders.map((order) => ({
       id: order.id,
       userId: order.customer_id,
+      userEmail: order.customer_id === currentUser?.id ? currentUser.email : null,
       customerName: order.customer_name,
       customerPhone: order.customer_phone,
       customerAddress: order.customer_address,
@@ -293,7 +295,7 @@ const app = {
         postedDate: video.created_at,
         views: (views || []).filter((item) => item.video_id === video.id).map((item) => ({ userId: item.user_id, date: item.created_at })),
         likes: (likes || []).filter((item) => item.video_id === video.id).map((item) => ({ userId: item.user_id, date: item.created_at })),
-        comments: (comments || []).filter((item) => item.video_id === video.id).map((item) => ({ id: item.id, userId: item.user_id, name: item.user_id, text: item.text, date: item.created_at }))
+        comments: (comments || []).filter((item) => item.video_id === video.id).map((item) => ({ id: item.id, userId: item.user_id, text: item.text, date: item.created_at }))
       }))));
       localStorage.setItem('bgshop_ad_videos', JSON.stringify((adLinks || []).map((link) => {
         const video = videos.find((item) => item.id === link.video_id);
@@ -327,7 +329,26 @@ const app = {
           messageBackground: settings.message_background
         }));
       }
-      if (cartItems) localStorage.setItem('bgshop_cart', JSON.stringify(cartItems.map((item) => item.product_id)));
+      if (cartItems) {
+        const remoteIds = cartItems.map((item) => item.product_id);
+        const localIds = this.getCart();
+        const mergedIds = [...new Map([...remoteIds, ...localIds].map((id) => [String(id), Number(id)])).values()]
+          .filter(Number.isSafeInteger);
+        localStorage.setItem('bgshop_cart', JSON.stringify(mergedIds));
+        const newIds = mergedIds.filter((id) => !remoteIds.some((remoteId) => String(remoteId) === String(id)));
+        if (newIds.length) {
+          const { error: cartError } = await client.from('carts').upsert({ user_id: user.id });
+          if (cartError) {
+            console.error('Impossible de synchroniser le panier local.', cartError.message);
+          } else {
+            const { error: itemsError } = await client.from('cart_items').upsert(
+              newIds.map((productId) => ({ cart_id: user.id, product_id: productId, quantity: 1 })),
+              { onConflict: 'cart_id,product_id' }
+            );
+            if (itemsError) console.error('Impossible de synchroniser les articles du panier.', itemsError.message);
+          }
+        }
+      }
       if (collections) {
         for (const key of ['liked', 'favorites']) {
           localStorage.setItem(`bgshop_product_${key}_${user.email}`, JSON.stringify(collections.filter((item) => item.collection === key).map((item) => item.product_id)));
@@ -620,15 +641,11 @@ const app = {
   async getPromoCodes() {
     const client = window.bgSupabase?.getClient();
     if (client) {
-      try {
-        const { data, error } = await client.from('promo_codes').select('*').order('created_at', { ascending: false });
-        if (!error && data) {
-          localStorage.setItem('bgshop_promo_codes', JSON.stringify(data));
-          return data;
-        }
-      } catch (error) {
-        console.error('Impossible de charger les codes promo.', error);
-      }
+      const { data, error } = await client.from('promo_codes').select('*').order('created_at', { ascending: false });
+      if (error) throw new Error(`Impossible de charger les codes promo : ${error.message}`);
+      if (!data) throw new Error('Supabase n’a retourné aucun résultat pour les codes promo.');
+      localStorage.setItem('bgshop_promo_codes', JSON.stringify(data));
+      return data;
     }
     return JSON.parse(localStorage.getItem('bgshop_promo_codes') || '[]');
   },
@@ -690,7 +707,15 @@ const app = {
     const user = this.checkAuth();
     const client = window.bgSupabase?.getClient();
     if (client && user?.id) {
-      client.from('carts').upsert({ user_id: user.id }).then(() => client.from('cart_items').upsert({ cart_id: user.id, product_id: productId, quantity: 1 }));
+      client.from('carts').upsert({ user_id: user.id })
+        .then(({ error }) => {
+          if (error) throw error;
+          return client.from('cart_items').upsert({ cart_id: user.id, product_id: productId, quantity: 1 });
+        })
+        .then(({ error }) => {
+          if (error) throw error;
+        })
+        .catch((error) => console.error('Impossible de synchroniser le panier.', error.message));
     }
   },
 
@@ -698,7 +723,12 @@ const app = {
     localStorage.setItem('bgshop_cart', JSON.stringify(this.getCart().filter((id) => id !== productId)));
     const user = this.checkAuth();
     const client = window.bgSupabase?.getClient();
-    if (client && user?.id) client.from('cart_items').delete().eq('cart_id', user.id).eq('product_id', productId);
+    if (client && user?.id) {
+      client.from('cart_items').delete().eq('cart_id', user.id).eq('product_id', productId)
+        .then(({ error }) => {
+          if (error) console.error('Impossible de synchroniser la suppression du panier.', error.message);
+        });
+    }
   },
 
   getUserSettings(userEmail) {
@@ -713,13 +743,10 @@ const app = {
 
   async saveUserSettings(userEmail, settings) {
     if (!userEmail) return;
-    localStorage.setItem(`bgshop_settings_${userEmail}`, JSON.stringify(settings));
-    localStorage.setItem('bgshop_language', settings.language || 'fr');
-    this.applyUserSettings(settings);
-    applySiteLanguage(settings.language || 'fr');
     const user = this.checkAuth();
     const client = window.bgSupabase?.getClient();
-    if (client && user?.id) {
+    if (client) {
+      if (!user?.id) throw new Error('Reconnectez-vous pour enregistrer vos préférences.');
       const { error } = await client.from('user_settings').upsert({
         user_id: user.id,
         language: settings.language,
@@ -728,6 +755,10 @@ const app = {
       });
       if (error) throw new Error(`Impossible d’enregistrer les préférences : ${error.message}`);
     }
+    localStorage.setItem(`bgshop_settings_${userEmail}`, JSON.stringify(settings));
+    localStorage.setItem('bgshop_language', settings.language || 'fr');
+    this.applyUserSettings(settings);
+    applySiteLanguage(settings.language || 'fr');
   },
 
   applyUserSettings(settings) {
@@ -929,11 +960,11 @@ const app = {
   async getPaymentNumbers() {
     const client = window.bgSupabase?.getClient();
     if (client) {
-      const { data } = await client.from('payment_numbers').select('*').order('created_at', { ascending: true });
-      if (data) {
-        localStorage.setItem('bgshop_payment_numbers', JSON.stringify(data));
-        return data;
-      }
+      const { data, error } = await client.from('payment_numbers').select('*').order('created_at', { ascending: true });
+      if (error) throw new Error(`Impossible de charger les numéros de paiement : ${error.message}`);
+      if (!data) throw new Error('Supabase n’a retourné aucun résultat pour les numéros de paiement.');
+      localStorage.setItem('bgshop_payment_numbers', JSON.stringify(data));
+      return data;
     }
     return JSON.parse(localStorage.getItem('bgshop_payment_numbers') || '[]');
   },
@@ -1065,13 +1096,14 @@ const app = {
     const user = this.checkAuth();
     const remoteFavorites = JSON.parse(localStorage.getItem('bgshop_favorites_remote') || '[]');
     const localFavorites = JSON.parse(localStorage.getItem(`bgshop_favorites_${userEmail}`) || '[]');
-    const remoteIds = remoteFavorites.filter((favorite) => favorite.user_id === user?.id).map((favorite) => favorite.video_id);
-    return remoteIds.length ? remoteIds : localFavorites;
+    const remoteIds = remoteFavorites.filter((favorite) => favorite.user_id === user?.id).map((favorite) => String(favorite.video_id));
+    return remoteIds.length ? remoteIds : localFavorites.map(String);
   },
 
   async toggleVideoFavorite(videoId, userEmail) {
     const favorites = this.getFavoriteVideoIds(userEmail);
-    const favoriteIndex = favorites.indexOf(videoId);
+    const normalizedVideoId = String(videoId);
+    const favoriteIndex = favorites.indexOf(normalizedVideoId);
     const user = this.checkAuth();
     const client = window.bgSupabase?.getClient();
     if (client && user?.id) {
@@ -1084,10 +1116,10 @@ const app = {
       }
     }
     if (favoriteIndex >= 0) favorites.splice(favoriteIndex, 1);
-    else favorites.push(videoId);
+    else favorites.push(normalizedVideoId);
     localStorage.setItem(`bgshop_favorites_${userEmail}`, JSON.stringify(favorites));
     const remoteFavorites = JSON.parse(localStorage.getItem('bgshop_favorites_remote') || '[]')
-      .filter((favorite) => !(favorite.user_id === user?.id && favorite.video_id === videoId));
+      .filter((favorite) => !(favorite.user_id === user?.id && String(favorite.video_id) === normalizedVideoId));
     if (favoriteIndex < 0 && user?.id) remoteFavorites.push({ user_id: user.id, video_id: videoId });
     localStorage.setItem('bgshop_favorites_remote', JSON.stringify(remoteFavorites));
     return favoriteIndex < 0;
@@ -1536,7 +1568,8 @@ const app = {
       const { error: loginError } = await client.auth.signInWithPassword({ email, password: currentPassword });
       if (loginError) return false;
       const { error } = await client.auth.updateUser({ password: newPassword });
-      return !error;
+      if (error) throw new Error(`Impossible de modifier le mot de passe : ${error.message}`);
+      return true;
     }
     const users = JSON.parse(localStorage.getItem('bgshop_users') || '[]');
     const admin = users.find((user) => user.email === email && user.role === 'admin');

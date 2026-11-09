@@ -445,7 +445,7 @@
                     const likes = video.likes || [];
                     const comments = video.comments || [];
                     const liked = user && likes.some((like) => like.userId === user.id || like.userEmail === user.email);
-                    const favorited = favorites.includes(video.id);
+                    const favorited = favorites.includes(String(video.id));
                     return `
                         <article class="video-card" data-video-id="${Number(video.id)}">
                             <video controls muted playsinline preload="metadata" src="${escapeVideoHtml(video.videoUrl)}" aria-label="${escapeVideoHtml(video.title)}"></video>

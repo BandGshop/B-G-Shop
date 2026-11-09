@@ -199,28 +199,34 @@ function applySiteLanguage(language) {
 }
 
 const app = {
+  pendingVideoViews: new Set(),
+
   // Initialize app data
   init() {
     this.ensureDefaultData();
     this.checkAuth();
     this.requestNotificationPermissionOnInteraction();
-    this.ready = this.hydrateFromSupabase();
+    if (!this.ready) this.ready = this.hydrateFromSupabase();
     return this.ready;
   },
 
   async hydrateFromSupabase() {
     const client = window.bgSupabase?.getClient();
     if (!client) return;
-    const { data: sessionData } = await client.auth.getSession();
+    const { data: sessionData, error: sessionError } = await client.auth.getSession();
+    if (sessionError) throw new Error(`Impossible de vérifier la session Supabase : ${sessionError.message}`);
     if (sessionData.session?.user) {
       const authUser = sessionData.session.user;
-      const { data: profile } = await client.from('profiles').select('*').eq('id', authUser.id).maybeSingle();
+      const { data: profile, error: profileError } = await client.from('profiles').select('*').eq('id', authUser.id).maybeSingle();
+      if (profileError) throw new Error(`Impossible de charger votre profil : ${profileError.message}`);
       localStorage.setItem('bgshop_currentUser', JSON.stringify(profile || {
         id: authUser.id,
         email: authUser.email,
         name: authUser.user_metadata?.name || authUser.email?.split('@')[0],
         role: 'user'
       }));
+    } else {
+      localStorage.removeItem('bgshop_currentUser');
     }
     await this.syncProductsFromSupabase();
 
@@ -233,9 +239,16 @@ const app = {
       customerAddress: order.customer_address,
       status: order.status,
       createdDate: order.created_at,
+      items: (order.order_items || []).map((item) => ({
+        productId: item.product_id,
+        productTitle: item.product_title,
+        productPrice: item.product_price,
+        quantity: item.quantity
+      })),
       productId: order.order_items?.[0]?.product_id,
-      productTitle: order.order_items?.[0]?.product_title,
-      productPrice: order.order_items?.[0]?.product_price,
+      productTitle: (order.order_items || []).map((item) => `${item.product_title}${item.quantity > 1 ? ` × ${item.quantity}` : ''}`).join(', '),
+      productPrice: order.final_total,
+      finalTotal: order.final_total,
       paymentMethod: order.payment_method,
       paymentProof: order.payment_proof
     }))));
@@ -280,7 +293,7 @@ const app = {
         postedDate: video.created_at,
         views: (views || []).filter((item) => item.video_id === video.id).map((item) => ({ userId: item.user_id, date: item.created_at })),
         likes: (likes || []).filter((item) => item.video_id === video.id).map((item) => ({ userId: item.user_id, date: item.created_at })),
-        comments: (comments || []).filter((item) => item.video_id === video.id).map((item) => ({ id: item.id, userId: item.user_id, text: item.text, date: item.created_at }))
+        comments: (comments || []).filter((item) => item.video_id === video.id).map((item) => ({ id: item.id, userId: item.user_id, name: item.user_id, text: item.text, date: item.created_at }))
       }))));
       localStorage.setItem('bgshop_ad_videos', JSON.stringify((adLinks || []).map((link) => {
         const video = videos.find((item) => item.id === link.video_id);
@@ -480,7 +493,7 @@ const app = {
         return { success: false, message: profileError.message };
       }
     }
-    const users = JSON.parse(localStorage.getItem('bgshop_users'));
+    const users = JSON.parse(localStorage.getItem('bgshop_users') || '[]');
     const user = users.find(u => u.email === email && u.password === password);
     if (user) {
       localStorage.setItem('bgshop_currentUser', JSON.stringify(user));
@@ -525,7 +538,7 @@ const app = {
       localStorage.setItem('bgshop_currentUser', JSON.stringify(user));
       return { success: true, user };
     }
-    const users = JSON.parse(localStorage.getItem('bgshop_users'));
+    const users = JSON.parse(localStorage.getItem('bgshop_users') || '[]');
     if (users.find(u => u.email === email)) {
       return { success: false, message: 'Email déjà utilisé' };
     }
@@ -571,7 +584,7 @@ const app = {
   },
 
   getProduct(id) {
-    return this.getProducts().find(p => p.id === id);
+    return this.getProducts().find((product) => String(product.id) === String(id));
   },
 
   async recordProductView(productId, user) {
@@ -803,7 +816,11 @@ const app = {
       }
       product.id = data.id;
       product.postedDate = data.created_at;
-      await this.notifyNewProduct(product);
+      try {
+        await this.notifyNewProduct(product);
+      } catch (error) {
+        console.warn('Article publié, mais sa notification n’a pas pu être envoyée.', error);
+      }
     } else {
       product.id = Math.max(...products.map(p => p.id), 0) + 1;
       product.postedDate = new Date().toISOString();
@@ -833,7 +850,7 @@ const app = {
         throw new Error('Le produit est introuvable ou votre compte admin n’est pas autorisé à le supprimer.');
       }
     }
-    const products = this.getProducts().filter((product) => product.id !== productId);
+    const products = this.getProducts().filter((product) => String(product.id) !== String(productId));
     localStorage.setItem('bgshop_products', JSON.stringify(products));
     return true;
   },
@@ -850,9 +867,21 @@ const app = {
 
   // Order management
   async addOrder(order) {
-    const orders = JSON.parse(localStorage.getItem('bgshop_orders'));
+    const orders = JSON.parse(localStorage.getItem('bgshop_orders') || '[]');
     order.status = 'pending';
     order.createdDate = new Date().toISOString();
+    const items = Array.isArray(order.items) && order.items.length
+      ? order.items
+      : [{
+        productId: order.productId || null,
+        productTitle: order.productTitle,
+        productPrice: Number(order.productPrice || 0),
+        quantity: 1
+      }];
+    const total = Number(order.finalTotal ?? items.reduce(
+      (sum, item) => sum + Number(item.productPrice || 0) * Number(item.quantity || 1),
+      0
+    ));
     const client = window.bgSupabase?.getClient();
     if (client) {
       if (!/^[0-9a-f-]{36}$/i.test(String(order.userId || ''))) {
@@ -869,16 +898,16 @@ const app = {
         discount_percent: Number(order.discountPercent || 0),
         discount_amount: Number(order.discountAmount || 0),
         partner_name: order.partnerName || null,
-        final_total: Number(order.finalTotal || order.productPrice || 0)
+        final_total: total
       }).select('id, created_at').single();
       if (error) throw new Error(`Impossible d’enregistrer la commande : ${error.message}`);
-      const { error: itemError } = await client.from('order_items').insert({
+      const { error: itemError } = await client.from('order_items').insert(items.map((item) => ({
         order_id: data.id,
-        product_id: order.productId || null,
-        product_title: order.productTitle,
-        product_price: Number(order.finalTotal || order.productPrice || 0),
-        quantity: 1
-      });
+        product_id: item.productId || null,
+        product_title: item.productTitle,
+        product_price: Number(item.productPrice || 0),
+        quantity: Number(item.quantity || 1)
+      })));
       if (itemError) {
         await client.from('orders').delete().eq('id', data.id);
         throw new Error(`Impossible d’enregistrer l’article commandé : ${itemError.message}`);
@@ -889,6 +918,9 @@ const app = {
       order.id = Math.max(...orders.map(o => o.id || 0), 0) + 1;
     }
 
+    order.items = items;
+    order.finalTotal = total;
+    order.productTitle = items.map((item) => `${item.productTitle}${item.quantity > 1 ? ` × ${item.quantity}` : ''}`).join(', ');
     orders.push(order);
     localStorage.setItem('bgshop_orders', JSON.stringify(orders));
     return order;
@@ -1037,23 +1069,28 @@ const app = {
     return remoteIds.length ? remoteIds : localFavorites;
   },
 
-  toggleVideoFavorite(videoId, userEmail) {
+  async toggleVideoFavorite(videoId, userEmail) {
     const favorites = this.getFavoriteVideoIds(userEmail);
     const favoriteIndex = favorites.indexOf(videoId);
-    if (favoriteIndex >= 0) {
-      favorites.splice(favoriteIndex, 1);
-    } else {
-      favorites.push(videoId);
-    }
-    localStorage.setItem(`bgshop_favorites_${userEmail}`, JSON.stringify(favorites));
     const user = this.checkAuth();
     const client = window.bgSupabase?.getClient();
     if (client && user?.id) {
-      const query = client.from('video_favorites').delete().eq('video_id', videoId).eq('user_id', user.id);
-      if (favorites.includes(videoId)) query.then(() => client.from('video_favorites').insert({ video_id: videoId, user_id: user.id }));
-      else query;
+      if (favoriteIndex >= 0) {
+        const { error } = await client.from('video_favorites').delete().eq('video_id', videoId).eq('user_id', user.id);
+        if (error) throw new Error(`Impossible de retirer la vidéo des favoris : ${error.message}`);
+      } else {
+        const { error } = await client.from('video_favorites').insert({ video_id: videoId, user_id: user.id });
+        if (error) throw new Error(`Impossible d’ajouter la vidéo aux favoris : ${error.message}`);
+      }
     }
-    return favorites.includes(videoId);
+    if (favoriteIndex >= 0) favorites.splice(favoriteIndex, 1);
+    else favorites.push(videoId);
+    localStorage.setItem(`bgshop_favorites_${userEmail}`, JSON.stringify(favorites));
+    const remoteFavorites = JSON.parse(localStorage.getItem('bgshop_favorites_remote') || '[]')
+      .filter((favorite) => !(favorite.user_id === user?.id && favorite.video_id === videoId));
+    if (favoriteIndex < 0 && user?.id) remoteFavorites.push({ user_id: user.id, video_id: videoId });
+    localStorage.setItem('bgshop_favorites_remote', JSON.stringify(remoteFavorites));
+    return favoriteIndex < 0;
   },
 
   async addVideo(video) {
@@ -1093,59 +1130,87 @@ const app = {
     return video;
   },
 
-  addVideoView(videoId, user) {
+  async addVideoView(videoId, user) {
     const videos = this.getVideos();
     const video = videos.find((v) => v.id === videoId);
     if (!video) return null;
-    const existing = video.views.find((view) => view.userEmail === user.email);
+    video.views = Array.isArray(video.views) ? video.views : [];
+    const existing = video.views.find((view) => String(view.userId) === String(user.id) || view.userEmail === user.email);
     if (!existing) {
-      video.views.push({
-        userEmail: user.email,
-        name: user.name,
-        date: new Date().toISOString(),
-      });
-      localStorage.setItem('bgshop_videos', JSON.stringify(videos));
-      const client = window.bgSupabase?.getClient();
-      if (client && user?.id) client.from('video_views').upsert({ video_id: videoId, user_id: user.id });
+      const viewKey = `${videoId}:${user.id || user.email}`;
+      if (this.pendingVideoViews.has(viewKey)) return video;
+      this.pendingVideoViews.add(viewKey);
+      try {
+        const client = window.bgSupabase?.getClient();
+        if (client && user?.id) {
+          const { error } = await client.from('video_views').upsert({ video_id: videoId, user_id: user.id });
+          if (error) throw new Error(`Impossible d’enregistrer la vue de la vidéo : ${error.message}`);
+        }
+        video.views.push({
+          userId: user.id,
+          userEmail: user.email,
+          name: user.name,
+          date: new Date().toISOString(),
+        });
+        localStorage.setItem('bgshop_videos', JSON.stringify(videos));
+      } finally {
+        this.pendingVideoViews.delete(viewKey);
+      }
     }
     return video;
   },
 
-  toggleVideoLike(videoId, user) {
+  async toggleVideoLike(videoId, user) {
     const videos = this.getVideos();
     const video = videos.find((v) => v.id === videoId);
     if (!video) return null;
-    const likedIndex = video.likes.findIndex((like) => like.userEmail === user.email);
+    video.likes = Array.isArray(video.likes) ? video.likes : [];
+    const likedIndex = video.likes.findIndex((like) => String(like.userId) === String(user.id) || like.userEmail === user.email);
+    const client = window.bgSupabase?.getClient();
+    if (client && user?.id) {
+      if (likedIndex >= 0) {
+        const { error } = await client.from('video_likes').delete().eq('video_id', videoId).eq('user_id', user.id);
+        if (error) throw new Error(`Impossible de retirer le J’aime : ${error.message}`);
+      } else {
+        const { error } = await client.from('video_likes').insert({ video_id: videoId, user_id: user.id });
+        if (error) throw new Error(`Impossible d’ajouter le J’aime : ${error.message}`);
+      }
+    }
     if (likedIndex >= 0) {
       video.likes.splice(likedIndex, 1);
     } else {
       video.likes.push({
+        userId: user.id,
         userEmail: user.email,
         name: user.name,
         date: new Date().toISOString(),
       });
     }
     localStorage.setItem('bgshop_videos', JSON.stringify(videos));
-    const client = window.bgSupabase?.getClient();
-    if (client && user?.id) {
-      const query = client.from('video_likes').delete().eq('video_id', videoId).eq('user_id', user.id);
-      if (likedIndex < 0) query.then(() => client.from('video_likes').insert({ video_id: videoId, user_id: user.id }));
-      else query;
-    }
     return video;
   },
 
-  addVideoComment(videoId, comment) {
+  async addVideoComment(videoId, comment) {
     const videos = this.getVideos();
     const video = videos.find((v) => v.id === videoId);
     if (!video) return null;
-    comment.id = Math.max(...video.comments.map((c) => c.id || 0), 0) + 1;
-    comment.date = new Date().toISOString();
-    video.comments.push(comment);
-    localStorage.setItem('bgshop_videos', JSON.stringify(videos));
+    video.comments = Array.isArray(video.comments) ? video.comments : [];
     const client = window.bgSupabase?.getClient();
     const user = this.checkAuth();
-    if (client && user?.id) client.from('video_comments').insert({ video_id: videoId, user_id: user.id, text: comment.text });
+    if (client && user?.id) {
+      const { data, error } = await client.from('video_comments')
+        .insert({ video_id: videoId, user_id: user.id, text: comment.text })
+        .select('id, created_at')
+        .single();
+      if (error) throw new Error(`Impossible de publier le commentaire : ${error.message}`);
+      comment.id = data.id;
+      comment.date = data.created_at;
+    } else {
+      comment.id = Math.max(...video.comments.map((c) => c.id || 0), 0) + 1;
+      comment.date = new Date().toISOString();
+    }
+    video.comments.push(comment);
+    localStorage.setItem('bgshop_videos', JSON.stringify(videos));
     return comment;
   },
 
@@ -1254,7 +1319,7 @@ const app = {
   },
 
   getUserByEmail(email) {
-    const users = JSON.parse(localStorage.getItem('bgshop_users'));
+    const users = JSON.parse(localStorage.getItem('bgshop_users') || '[]');
     return users.find((u) => u.email === email);
   },
 
@@ -1473,7 +1538,7 @@ const app = {
       const { error } = await client.auth.updateUser({ password: newPassword });
       return !error;
     }
-    const users = JSON.parse(localStorage.getItem('bgshop_users'));
+    const users = JSON.parse(localStorage.getItem('bgshop_users') || '[]');
     const admin = users.find((user) => user.email === email && user.role === 'admin');
     if (!admin || admin.password !== currentPassword) return false;
     admin.password = newPassword;
@@ -1485,10 +1550,18 @@ const app = {
 
 // Initialize app on page load
 document.addEventListener('DOMContentLoaded', () => {
-  app.init();
+  const ready = app.init();
   const user = app.checkAuth();
   if (user) app.applyUserSettings(app.getUserSettings(user.email));
   applySiteLanguage(user ? app.getUserSettings(user.email).language : localStorage.getItem('bgshop_language') || 'fr');
+  ready.then(() => {
+    const authenticatedUser = app.checkAuth();
+    if (authenticatedUser) app.applyUserSettings(app.getUserSettings(authenticatedUser.email));
+    applySiteLanguage(authenticatedUser
+      ? app.getUserSettings(authenticatedUser.email).language
+      : localStorage.getItem('bgshop_language') || 'fr');
+    updateAuthUI();
+  }).catch((error) => console.error('Échec de l’initialisation Supabase :', error));
   const languageObserver = new MutationObserver((mutations) => {
     for (const mutation of mutations) {
       if (mutation.type === 'characterData') translateTextNode(mutation.target);
@@ -1531,21 +1604,28 @@ function renderGlobalTaskbar() {
 
 function productActionsMarkup(productId) {
   const user = app.checkAuth();
-  const liked = user && app.getUserProductIds(user.email, 'liked').includes(productId);
-  const favorite = user && app.getUserProductIds(user.email, 'favorites').includes(productId);
+  const liked = user && app.getUserProductIds(user.email, 'liked').includes(String(productId));
+  const favorite = user && app.getUserProductIds(user.email, 'favorites').includes(String(productId));
   return `<div class="product-actions">
     <button class="product-action ${liked ? 'active' : ''}" aria-label="J'aime" aria-pressed="${Boolean(liked)}" onclick="event.stopPropagation(); toggleProductCardCollection(${productId}, 'liked', this)">👍</button>
     <button class="product-action ${favorite ? 'active' : ''}" aria-label="Ajouter aux favoris" aria-pressed="${Boolean(favorite)}" onclick="event.stopPropagation(); toggleProductCardCollection(${productId}, 'favorites', this)">♡</button>
   </div>`;
 }
 
-function toggleProductCardCollection(productId, key, button) {
+async function toggleProductCardCollection(productId, key, button) {
   const user = app.checkAuth();
   if (!user) { window.location.href = 'login.html'; return; }
-  const active = app.toggleProductCollection(productId, user.email, key);
-  button.classList.toggle('active', active);
-  button.setAttribute('aria-pressed', String(active));
-  button.textContent = key === 'liked' ? '👍' : (active ? '♥' : '♡');
+  button.disabled = true;
+  try {
+    const active = await app.toggleProductCollection(productId, user.email, key);
+    button.classList.toggle('active', active);
+    button.setAttribute('aria-pressed', String(active));
+    button.textContent = key === 'liked' ? '👍' : (active ? '♥' : '♡');
+  } catch (error) {
+    alert(error.message || 'Impossible de mettre à jour ce produit.');
+  } finally {
+    button.disabled = false;
+  }
 }
 
 // Update auth UI

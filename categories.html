@@ -220,6 +220,9 @@
         <script src="js/app.js"></script>
         <script>
             let currentCategory = null;
+            const escapeHtml = (value) => String(value ?? "").replace(/[&<>"']/g, (character) => ({
+                "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
+            })[character]);
 
             function loadCategories() {
                 const categories = app.getCategories();
@@ -257,11 +260,9 @@
             function filterByCategory(category, button) {
                 currentCategory = category;
 
-                // Update active button
-                document.querySelectorAll(".category-btn").forEach((btn) => btn.classList.remove("active"));
+                document.querySelectorAll(".category-btn, .subcategory-btn").forEach((btn) => btn.classList.remove("active"));
                 button.classList.add("active");
 
-                // Load products
                 loadProducts();
             }
 
@@ -289,12 +290,12 @@
                 container.innerHTML = products
                 .map(
                     (product) => `
-          <div class="product-card" onclick="goToProduct(${product.id})">
-            <img src="${product.image}" alt="${product.title}" class="product-image" />
+          <div class="product-card" onclick="goToProduct(${Number(product.id)})">
+            <img src="${escapeHtml(product.image || "images/ad-placeholder.svg")}" alt="${escapeHtml(product.title)}" class="product-image" />
             <div class="product-info">
-              <div class="product-category">${product.category}</div>
-              <div class="product-title">${product.title}</div>
-              <div class="product-description">${product.description.substring(0, 60)}...</div>
+              <div class="product-category">${escapeHtml(product.category)}</div>
+              <div class="product-title">${escapeHtml(product.title)}</div>
+              <div class="product-description">${escapeHtml(product.description || "").substring(0, 60)}...</div>
               <div class="product-price">${product.price} FCFA</div>
               ${productActionsMarkup(product.id)}
             </div>
@@ -308,10 +309,18 @@
                 window.location.href = `product-detail.html?id=${productId}`;
             }
 
-            // Initialize
-            document.addEventListener("DOMContentLoaded", () => {
+            document.addEventListener("DOMContentLoaded", async () => {
+                await app.ready?.catch((error) => console.error("Échec du chargement Supabase :", error));
+                const requestedCategory = new URLSearchParams(window.location.search).get("category");
+                const knownCategories = app.getCategories().flatMap((category) => [category.name, ...(category.subcategories || [])]);
+                if (knownCategories.includes(requestedCategory)) currentCategory = requestedCategory;
                 loadCategories();
                 loadProducts();
+                document.querySelectorAll(".category-btn, .subcategory-btn").forEach((button) => {
+                    const category = button.textContent.trim();
+                    button.classList.toggle("active", category === (currentCategory || "Tous les produits"));
+                });
+                window.addEventListener("bgshop-products-synced", loadProducts);
             });
         </script>
     </body>

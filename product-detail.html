@@ -294,7 +294,7 @@
                     <fieldset class="form-group">
                         <legend>Mode de paiement *</legend>
                         <label><input type="radio" name="payment-method" value="mobile_money" onchange="togglePaymentFields()" required /> MTN Mobile Money</label>
-                        <label><input type="radio" name="payment-method" value="cash_on_delivery" onchange="togglePaymentFields()" /> Paiement à la livraison</label>
+                        <label><input type="radio" name="payment-method" value="cash_on_delivery" onchange="togglePaymentFields()" checked /> Paiement à la livraison</label>
                     </fieldset>
                     <div id="mobile-money-fields" style="display: none; padding: 1rem; border: 1px solid var(--bordure); border-radius: 10px; margin-bottom: 1rem;">
                         <p id="payment-numbers-message" style="margin-top: 0;">Numéro de dépôt en cours de chargement...</p>
@@ -325,10 +325,14 @@
         <script src="js/app.js"></script>
         <script>
             let currentProductId = null;
+            const escapeHtml = (value) => String(value ?? "").replace(/[&<>"']/g, (character) => ({
+                "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
+            })[character]);
 
             function getProductIdFromUrl() {
                 const params = new URLSearchParams(window.location.search);
-                return parseInt(params.get("id"));
+                const id = Number(params.get("id"));
+                return Number.isSafeInteger(id) && id > 0 ? id : null;
             }
 
             function loadProductDetail() {
@@ -345,14 +349,14 @@
 
                 document.getElementById("product-container").innerHTML = `
           <div class="product-image-container">
-            <img src="${product.image}" alt="${product.title}" class="product-image-large" />
+            <img src="${escapeHtml(product.image || "images/ad-placeholder.svg")}" alt="${escapeHtml(product.title)}" class="product-image-large" />
           </div>
 
           <div class="product-details">
-            <div class="product-category">${product.category}</div>
-            <h1 class="product-title">${product.title}</h1>
+            <div class="product-category">${escapeHtml(product.category)}</div>
+            <h1 class="product-title">${escapeHtml(product.title)}</h1>
             <div class="product-price">${product.price} FCFA</div>
-            <p class="product-description">${product.description}</p>
+            <p class="product-description">${escapeHtml(product.description)}</p>
 
             <div class="action-buttons">
                             ${user ? `
@@ -409,10 +413,10 @@
                 container.innerHTML = products
                 .map(
                     (p) => `
-          <div class="related-card" onclick="window.location.href='product-detail.html?id=${p.id}'">
-            <img src="${p.image}" alt="${p.title}" />
+          <div class="related-card" onclick="window.location.href='product-detail.html?id=${encodeURIComponent(p.id)}'">
+            <img src="${escapeHtml(p.image || "images/ad-placeholder.svg")}" alt="${escapeHtml(p.title)}" />
             <div class="related-card-info">
-              <div class="related-card-title">${p.title}</div>
+              <div class="related-card-title">${escapeHtml(p.title)}</div>
               <div class="related-card-price">${p.price} FCFA</div>
             </div>
           </div>
@@ -429,8 +433,7 @@
                     window.location.href = "login.html";
                     return;
                 }
-                // In a real app, this would trigger a call
-                alert("Appel au support B&G Shop...\n\nNuméro: +242-069-404-839");
+                window.location.href = "tel:+242069404839";
             }
 
             function contactWhatsApp() {
@@ -440,14 +443,22 @@
                     window.location.href = "login.html";
                     return;
                 }
-                // Open WhatsApp
                 const product = app.getProduct(currentProductId);
+                if (!product) return;
                 const message = `Bonjour, je suis intéressé par: ${product.title}. Ce produit est-il encore disponible?`;
-                window.open(`https://wa.me/+242069404839?text=${encodeURIComponent(message)}`);
+                window.open(`https://wa.me/242069404839?text=${encodeURIComponent(message)}`, "_blank", "noopener");
             }
 
             function openOrderModal() {
+                const user = app.checkAuth();
+                if (!user) return redirectToLogin();
+                currentAppliedPromo = null;
+                document.getElementById("promo-code").value = "";
+                document.getElementById("promo-status").textContent = "";
+                document.getElementById("order-modal").querySelector("form").reset();
                 document.getElementById("order-modal").style.display = "flex";
+                document.getElementById("order-name").value = user.name || "";
+                togglePaymentFields();
                 loadPaymentNumbers();
             }
 
@@ -460,10 +471,15 @@
             }
 
             async function loadPaymentNumbers() {
-                const numbers = await app.getPaymentNumbers();
-                document.getElementById("payment-numbers-message").textContent = numbers.length
-                    ? `Faites le dépôt MTN sur : ${numbers.map((number) => `${number.phone}${number.label ? ` (${number.label})` : ''}`).join(', ')}`
-                    : "Aucun numéro MTN n'est disponible pour le moment. Choisissez le paiement à la livraison.";
+                const message = document.getElementById("payment-numbers-message");
+                try {
+                    const numbers = await app.getPaymentNumbers();
+                    message.textContent = numbers.length
+                        ? `Faites le dépôt MTN sur : ${numbers.map((number) => `${number.phone}${number.label ? ` (${number.label})` : ''}`).join(', ')}`
+                        : "Aucun numéro MTN n'est disponible pour le moment. Choisissez le paiement à la livraison.";
+                } catch (error) {
+                    message.textContent = error.message || "Impossible de charger les numéros de paiement.";
+                }
             }
 
             function togglePaymentFields() {
@@ -488,12 +504,13 @@
                     return;
                 }
 
-                const result = await app.applyPromoToAmount(product.price, code);
-                document.getElementById('promo-status').textContent = result.message || 'Code promo invalide.';
-                if (result.valid) {
-                    currentAppliedPromo = result;
-                } else {
+                try {
+                    const result = await app.applyPromoToAmount(product.price, code);
+                    document.getElementById('promo-status').textContent = result.message || 'Code promo invalide.';
+                    currentAppliedPromo = result.valid ? result : null;
+                } catch (error) {
                     currentAppliedPromo = null;
+                    document.getElementById('promo-status').textContent = error.message || 'Impossible de vérifier le code promo.';
                 }
             }
 
@@ -523,17 +540,38 @@
                 }
 
                 const product = app.getProduct(currentProductId);
+                if (!product) {
+                    alert("Ce produit n'est plus disponible.");
+                    return;
+                }
                 const paymentMethod = document.querySelector('input[name="payment-method"]:checked')?.value;
                 const proofFile = document.getElementById("payment-proof").files[0];
                 if (paymentMethod === "mobile_money" && !proofFile) {
                     alert("Veuillez joindre la capture ou la photo du reçu MTN.");
                     return;
                 }
+                if (proofFile && (proofFile.size > 5 * 1024 * 1024 || !proofFile.type.startsWith("image/"))) {
+                    alert("La preuve doit être une image de 5 Mo maximum.");
+                    return;
+                }
 
-                const paymentProof = paymentMethod === "mobile_money" && proofFile
-                    ? await new Promise((resolve) => {
+                const submitButton = e.currentTarget.querySelector('button[type="submit"]');
+                submitButton.disabled = true;
+                let succeeded = false;
+                try {
+                    const promo = currentAppliedPromo
+                        ? await app.applyPromoToAmount(product.price, currentAppliedPromo.code)
+                        : null;
+                    if (currentAppliedPromo && !promo?.valid) {
+                        currentAppliedPromo = null;
+                        document.getElementById("promo-status").textContent = "Le code promo n’est plus valide.";
+                        throw new Error("Vérifiez le montant avant de renvoyer la commande.");
+                    }
+                    const paymentProof = paymentMethod === "mobile_money" && proofFile
+                    ? await new Promise((resolve, reject) => {
                         const reader = new FileReader();
                         reader.onload = () => resolve(reader.result);
+                        reader.onerror = () => reject(new Error("Impossible de lire la preuve de paiement."));
                         reader.readAsDataURL(proofFile);
                     })
                     : null;
@@ -549,30 +587,35 @@
                     userEmail: user.email,
                     paymentMethod,
                     paymentProof,
-                    discountCode: currentAppliedPromo?.code || null,
-                    discountPercent: currentAppliedPromo?.discountPercent || 0,
-                    discountAmount: currentAppliedPromo?.discountAmount || 0,
-                    partnerName: currentAppliedPromo?.partnerName || null,
-                    finalTotal: currentAppliedPromo ? currentAppliedPromo.finalAmount : product.price,
+                    discountCode: promo?.valid ? promo.code : null,
+                    discountPercent: promo?.valid ? promo.discountPercent : 0,
+                    discountAmount: promo?.valid ? promo.discountAmount : 0,
+                    partnerName: promo?.valid ? promo.partnerName : null,
+                    finalTotal: promo?.valid ? promo.finalAmount : product.price,
                 };
 
-                try {
                     await app.addOrder(order);
+                    succeeded = true;
                 } catch (error) {
                     alert(error.message || "Impossible d'envoyer la commande.");
-                    return;
+                } finally {
+                    submitButton.disabled = false;
                 }
 
+                if (!succeeded) return;
                 alert(
                     "✓ Commande envoyée avec succès!\n\nLes administrateurs préparent votre commande et vous enverront une confirmation avec la date de livraison."
                 );
                 closeOrderModal();
                 document.getElementById("order-modal").querySelector("form").reset();
+                currentAppliedPromo = null;
             }
 
             // Initialize
-            document.addEventListener("DOMContentLoaded", () => {
+            document.addEventListener("DOMContentLoaded", async () => {
+                await app.ready?.catch((error) => console.error("Échec du chargement Supabase :", error));
                 loadProductDetail();
+                togglePaymentFields();
             });
         </script>
     </body>

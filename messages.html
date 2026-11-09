@@ -332,8 +332,12 @@
         <script>
             let currentUser = null;
             let currentThreadEmail = null;
+            const escapeHtml = (value) => String(value ?? "").replace(/[&<>"']/g, (character) => ({
+                "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
+            })[character]);
 
-            document.addEventListener("DOMContentLoaded", () => {
+            document.addEventListener("DOMContentLoaded", async () => {
+                await app.ready?.catch((error) => console.error("Échec du chargement Supabase :", error));
                 currentUser = app.checkAuth();
                 updateAuthUI();
                 renderMessagesPage();
@@ -342,6 +346,10 @@
                 if (form) {
                     form.addEventListener("submit", handleMessageSubmit);
                 }
+                window.addEventListener("bgshop-data-synced", () => {
+                    currentUser = app.checkAuth();
+                    renderMessagesPage();
+                });
             });
 
             function renderMessagesPage() {
@@ -382,8 +390,8 @@
                     const item = document.createElement("div");
                     item.className = "thread-item" + (thread.userEmail === currentThreadEmail ? " active" : "");
                     item.innerHTML = `
-                        <div class="thread-title">${thread.userName}</div>
-                        <div class="thread-preview">${thread.lastMessage.text.substring(0, 80)}${
+                        <div class="thread-title">${escapeHtml(thread.userName)}</div>
+                        <div class="thread-preview">${escapeHtml(thread.lastMessage.text.substring(0, 80))}${
                         thread.lastMessage.text.length > 80 ? "…" : ""
                     }</div>
                         <div class="thread-meta">
@@ -413,7 +421,7 @@
                     <div class="thread-item active">
                         <div class="thread-title">B&G Shop</div>
                         <div class="thread-preview">${
-                            lastMessage ? lastMessage.text.substring(0, 80) : "Aucun message envoyé"
+                            lastMessage ? escapeHtml(lastMessage.text.substring(0, 80)) : "Aucun message envoyé"
                         }</div>
                         <div class="thread-meta"><span>${messages.length} message${
                     messages.length > 1 ? "s" : ""
@@ -433,8 +441,8 @@
                     const threadUser = app.getUserByEmail(userEmail);
                     header.innerHTML = `
                         <div>
-                            <h2>${threadUser ? threadUser.name : userEmail}</h2>
-                            <p>${userEmail}</p>
+                            <h2>${escapeHtml(threadUser ? threadUser.name : userEmail)}</h2>
+                            <p>${escapeHtml(userEmail)}</p>
                         </div>
                     `;
                     app.markThreadReadByAdmin(userEmail);
@@ -463,7 +471,7 @@
                             senderLabel =
                                 message.sender === "admin"
                                     ? "Support B&G"
-                                    : app.getUserByEmail(message.sender)?.name || message.sender;
+                                    : escapeHtml(app.getUserByEmail(message.sender)?.name || message.sender);
                         } else {
                             senderLabel = message.sender === "admin" ? "Support B&G" : "Vous";
                         }
@@ -476,7 +484,7 @@
                                     minute: "2-digit",
                                 })}</span>
                             </div>
-                            <div>${message.text.replace(/\n/g, "<br/>")}</div>
+                            <div>${escapeHtml(message.text).replace(/\n/g, "<br/>")}</div>
                         `;
                         history.appendChild(card);
                     });

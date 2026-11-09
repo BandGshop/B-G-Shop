@@ -275,7 +275,7 @@
     <body>
         <nav class="navbar">
             <div class="navbar-logo">
-                <img src="logo.svg" alt="B&G Shop logo" class="site-logo" />
+                <img src="images/bglogo.jpeg" alt="B&G Shop logo" class="site-logo" />
                 <span>B&G Shop</span>
             </div>
             <div class="navbar-links">
@@ -327,18 +327,26 @@
                 return user;
             }
 
-            function toggleLike(videoId) {
+            async function toggleLike(videoId) {
                 const user = requireUser();
                 if (!user) return;
-                app.toggleVideoLike(videoId, user);
-                renderVideos();
+                try {
+                    await app.toggleVideoLike(videoId, user);
+                    renderVideos();
+                } catch (error) {
+                    alert(error.message || "Impossible de mettre à jour le J’aime.");
+                }
             }
 
-            function toggleFavorite(videoId) {
+            async function toggleFavorite(videoId) {
                 const user = requireUser();
                 if (!user) return;
-                app.toggleVideoFavorite(videoId, user.email);
-                renderVideos();
+                try {
+                    await app.toggleVideoFavorite(videoId, user.email);
+                    renderVideos();
+                } catch (error) {
+                    alert(error.message || "Impossible de mettre à jour les favoris.");
+                }
             }
 
             function toggleComments(videoId) {
@@ -350,21 +358,39 @@
             function renderComments(videoId) {
                 const video = app.getVideoById(videoId);
                 const list = document.querySelector(`#comments-${videoId} .comments-list`);
-                list.innerHTML = video.comments.length
-                    ? video.comments.map((comment) => `<div class="comment-item"><strong>${comment.name}</strong> ${comment.text}</div>`).join("")
-                    : "<p>Aucun commentaire pour le moment.</p>";
+                list.replaceChildren();
+                if (!video.comments.length) {
+                    list.textContent = "Aucun commentaire pour le moment.";
+                    return;
+                }
+                video.comments.forEach((comment) => {
+                    const item = document.createElement("div");
+                    item.className = "comment-item";
+                    const author = document.createElement("strong");
+                    author.textContent = comment.name || "Utilisateur";
+                    item.append(author, document.createTextNode(` ${comment.text}`));
+                    list.appendChild(item);
+                });
             }
 
-            function submitComment(event, videoId) {
+            async function submitComment(event, videoId) {
                 event.preventDefault();
                 const user = requireUser();
                 if (!user) return;
                 const input = event.target.querySelector("input");
                 const text = input.value.trim();
                 if (!text) return;
-                app.addVideoComment(videoId, { text, name: user.name, userEmail: user.email });
-                input.value = "";
-                renderComments(videoId);
+                const button = event.target.querySelector("button");
+                button.disabled = true;
+                try {
+                    await app.addVideoComment(videoId, { text, name: user.name, userEmail: user.email });
+                    input.value = "";
+                    renderComments(videoId);
+                } catch (error) {
+                    alert(error.message || "Impossible de publier le commentaire.");
+                } finally {
+                    button.disabled = false;
+                }
             }
 
             function openOrderModal(videoId) {
@@ -418,11 +444,11 @@
                 feed.innerHTML = videos.map((video) => {
                     const likes = video.likes || [];
                     const comments = video.comments || [];
-                    const liked = user && likes.some((like) => like.userEmail === user.email);
+                    const liked = user && likes.some((like) => like.userId === user.id || like.userEmail === user.email);
                     const favorited = favorites.includes(video.id);
                     return `
-                        <article class="video-card">
-                            <video controls muted playsinline preload="metadata" src="${video.videoUrl}" aria-label="${video.title}"></video>
+                        <article class="video-card" data-video-id="${Number(video.id)}">
+                            <video controls muted playsinline preload="metadata" src="${escapeVideoHtml(video.videoUrl)}" aria-label="${escapeVideoHtml(video.title)}"></video>
                             <div class="video-actions">
                                 <button class="video-action ${liked ? "active" : ""}" onclick="toggleLike(${video.id})" title="J'aime">♥<small>${likes.length}</small></button>
                                 <button class="video-action" onclick="toggleComments(${video.id})" title="Commentaires">💬<small>${comments.length}</small></button>
@@ -430,8 +456,8 @@
                                 <button class="video-action" onclick="openOrderModal(${video.id})" title="Passer la commande">🛒</button>
                             </div>
                             <div class="video-card-content">
-                                <h2>${video.title}</h2>
-                                <p>${video.description}</p>
+                                <h2>${escapeVideoHtml(video.title)}</h2>
+                                <p>${escapeVideoHtml(video.description)}</p>
                                 <span class="video-date">Publiée le ${new Date(video.postedDate).toLocaleDateString("fr-FR")}</span>
                             </div>
                             <div id="comments-${video.id}" class="comments-panel">
@@ -447,16 +473,29 @@
                 }).join("");
             }
 
-            document.addEventListener("DOMContentLoaded", () => {
+            function escapeVideoHtml(value) {
+                return String(value ?? "").replace(/[&<>"']/g, (character) => ({
+                    "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
+                })[character]);
+            }
+
+            document.addEventListener("DOMContentLoaded", async () => {
+                await app.ready?.catch((error) => console.error("Échec du chargement Supabase :", error));
                 updateAuthUI();
                 document.getElementById("order-form").addEventListener("submit", submitOrder);
                 renderVideos();
+                window.addEventListener("bgshop-data-synced", renderVideos);
                 const videoObserver = new IntersectionObserver((entries) => {
                     entries.forEach((entry) => {
                         if (entry.isIntersecting && entry.intersectionRatio >= 0.7) {
                             document.querySelectorAll(".video-card video").forEach((video) => {
                                 if (video !== entry.target) video.pause();
                             });
+                            const user = app.checkAuth();
+                            const videoId = Number(entry.target.closest(".video-card")?.dataset.videoId);
+                            if (user && Number.isSafeInteger(videoId)) {
+                                app.addVideoView(videoId, user).catch((error) => console.warn(error.message));
+                            }
                             entry.target.play().catch(() => {});
                         }
                     });

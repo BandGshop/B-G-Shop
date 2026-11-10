@@ -291,7 +291,7 @@
                 .map(
                     (product) => `
           <div class="product-card" onclick="goToProduct(${Number(product.id)})">
-            <img src="${escapeHtml(product.image || "images/ad-placeholder.svg")}" alt="${escapeHtml(product.title)}" class="product-image" />
+            <img src="${escapeHtml(product.image || "images/ad-placeholder.svg")}" alt="${escapeHtml(product.title)}" class="product-image" loading="lazy" decoding="async" />
             <div class="product-info">
               <div class="product-category">${escapeHtml(product.category)}</div>
               <div class="product-title">${escapeHtml(product.title)}</div>

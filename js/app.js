@@ -863,6 +863,9 @@ const app = {
   async addProduct(product, imageFile) {
     const products = this.getProducts();
     const client = window.bgSupabase?.getClient();
+    if (!client) {
+      throw new Error('Impossible de publier l’article sur tous les appareils : Supabase est indisponible. Vérifiez la connexion et la configuration, puis réessayez.');
+    }
     if (client) {
       const { data: authData, error: authError } = await client.auth.getUser();
       if (authError || !authData.user?.id) {
@@ -902,9 +905,6 @@ const app = {
       } catch (error) {
         console.warn('Article publié, mais sa notification n’a pas pu être envoyée.', error);
       }
-    } else {
-      product.id = Math.max(...products.map(p => p.id), 0) + 1;
-      product.postedDate = new Date().toISOString();
     }
 
     products.push(product);

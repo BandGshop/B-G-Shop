@@ -172,7 +172,7 @@
                 productsLoaded = true;
                 renderProducts();
             });
-            window.addEventListener('bgshop-products-sync-error', (event) => {
+            window.addEventListener('bgshop-products-sync-error', () => {
                 productsLoaded = true;
                 productsLoadFailed = true;
                 renderProducts();

@@ -15,7 +15,7 @@ from auth.users
 where email is not null
 on conflict (id) do update set email = excluded.email;
 
--- Après cette migration, définissez le rôle admin de votre compte dans Table Editor > profiles.
+-- Après cette migration, définissez le rôle admin de votre compte depuis le SQL Editor privilégié.
 -- Ou exécutez cette requête dans SQL Editor après avoir remplacé l'adresse :
 -- update public.profiles
 -- set role = 'admin'
@@ -52,6 +52,8 @@ alter table public.orders add column if not exists discount_amount numeric(12,2)
 alter table public.orders add column if not exists partner_name text;
 alter table public.orders add column if not exists final_total numeric(12,2) not null default 0;
 alter table public.videos add column if not exists price numeric(12,2) check (price >= 0);
+alter table public.products add column if not exists location text not null default '';
+alter table public.order_items add column if not exists video_id bigint references public.videos(id) on delete set null;
 create index if not exists products_created_at_idx on public.products(created_at desc);
 do $$
 begin
@@ -137,3 +139,259 @@ for insert to authenticated with check (bucket_id = 'product-images' and public.
 drop policy if exists product_images_delete_admin on storage.objects;
 create policy product_images_delete_admin on storage.objects
 for delete to authenticated using (bucket_id = 'product-images' and public.is_admin());
+
+-- Empêche un utilisateur connecté de s'attribuer le rôle administrateur.
+create or replace function public.prevent_profile_role_change()
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  if auth.role() = 'authenticated' and new.role is distinct from old.role then
+    raise exception 'Les utilisateurs ne peuvent pas modifier leur rôle.';
+  end if;
+  return new;
+end;
+$$;
+
+drop trigger if exists profiles_prevent_role_change on public.profiles;
+create trigger profiles_prevent_role_change
+before update on public.profiles
+for each row execute function public.prevent_profile_role_change();
+
+-- Les commandes et leurs lignes sont créées dans une seule transaction côté serveur.
+drop policy if exists orders_insert_authenticated on public.orders;
+drop policy if exists orders_insert_admin on public.orders;
+create policy orders_insert_admin on public.orders
+for insert to authenticated with check (public.is_admin());
+
+drop policy if exists order_items_insert_owner_or_admin on public.order_items;
+drop policy if exists order_items_insert_admin on public.order_items;
+create policy order_items_insert_admin on public.order_items
+for insert to authenticated with check (public.is_admin());
+
+create or replace function public.create_order(
+  p_customer_name text,
+  p_customer_phone text,
+  p_customer_address text,
+  p_payment_method public.payment_method,
+  p_payment_proof text,
+  p_discount_code text,
+  p_expected_total numeric,
+  p_items jsonb
+)
+returns table (
+  order_id bigint,
+  order_created_at timestamptz,
+  order_items jsonb,
+  final_total numeric,
+  discount_percent numeric,
+  discount_amount numeric,
+  partner_name text
+)
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_user_id uuid := auth.uid();
+  v_item jsonb;
+  v_product_id bigint;
+  v_video_id bigint;
+  v_quantity integer;
+  v_title text;
+  v_price numeric(12, 2);
+  v_subtotal numeric(12, 2) := 0;
+  v_discount_code text := nullif(upper(btrim(p_discount_code)), '');
+  v_discount_percent numeric(5, 2) := 0;
+  v_discount_amount numeric(12, 2) := 0;
+  v_partner_name text;
+  v_total numeric(12, 2);
+  v_canonical_items jsonb := '[]'::jsonb;
+  v_order_id bigint;
+  v_order_created_at timestamptz;
+begin
+  if v_user_id is null then
+    raise exception 'Vous devez être connecté pour passer une commande.';
+  end if;
+  if nullif(btrim(p_customer_name), '') is null
+    or nullif(btrim(p_customer_phone), '') is null
+    or nullif(btrim(p_customer_address), '') is null then
+    raise exception 'Le nom, le téléphone et l’adresse sont requis.';
+  end if;
+  if length(p_customer_name) > 200 or length(p_customer_phone) > 50 or length(p_customer_address) > 1000 then
+    raise exception 'Les informations de livraison dépassent la longueur autorisée.';
+  end if;
+  if jsonb_typeof(p_items) is distinct from 'array' then
+    raise exception 'La commande doit contenir une liste d’articles valide.';
+  end if;
+  if jsonb_array_length(p_items) < 1 or jsonb_array_length(p_items) > 50 then
+    raise exception 'Une commande doit contenir entre 1 et 50 articles.';
+  end if;
+  if p_payment_method is null then
+    raise exception 'Le mode de paiement est requis.';
+  end if;
+  if p_payment_method = 'mobile_money' and p_payment_proof is null then
+    raise exception 'La preuve de paiement est requise pour le paiement mobile.';
+  end if;
+  if p_payment_proof is not null and (
+    length(p_payment_proof) > 7000000
+    or p_payment_proof !~ '^data:image/(jpeg|png|webp);base64,[A-Za-z0-9+/]+={0,2}$'
+  ) then
+    raise exception 'La preuve doit être une image JPEG, PNG ou WebP valide.';
+  end if;
+
+  for v_item in select value from jsonb_array_elements(p_items) as items(value)
+  loop
+    v_product_id := nullif(v_item ->> 'productId', '')::bigint;
+    v_video_id := nullif(v_item ->> 'videoId', '')::bigint;
+    if (v_product_id is null) = (v_video_id is null) then
+      raise exception 'Chaque ligne doit correspondre à un seul article ou vidéo.';
+    end if;
+    v_quantity := coalesce(nullif(v_item ->> 'quantity', '')::integer, 1);
+    if v_quantity < 1 or v_quantity > 1000 then
+      raise exception 'La quantité demandée est invalide.';
+    end if;
+
+    if v_product_id is not null then
+      select products.title, products.price
+      into v_title, v_price
+      from public.products
+      where products.id = v_product_id;
+    else
+      select videos.title, videos.price
+      into v_title, v_price
+      from public.videos
+      where videos.id = v_video_id;
+    end if;
+    if not found or v_price is null then
+      raise exception 'Un article de la commande est introuvable ou indisponible.';
+    end if;
+
+    v_subtotal := v_subtotal + v_price * v_quantity;
+    v_canonical_items := v_canonical_items || jsonb_build_array(jsonb_build_object(
+      'productId', v_product_id,
+      'videoId', v_video_id,
+      'productTitle', v_title,
+      'productPrice', v_price,
+      'quantity', v_quantity
+    ));
+  end loop;
+
+  if v_discount_code is not null then
+    select promo_codes.discount_percent, promo_codes.partner_name
+    into v_discount_percent, v_partner_name
+    from public.promo_codes
+    where upper(promo_codes.code) = v_discount_code
+      and promo_codes.active
+      and (promo_codes.expires_at is null or promo_codes.expires_at >= now());
+    if not found or v_discount_percent <= 0 then
+      raise exception 'Code promo introuvable, expiré ou sans réduction.';
+    end if;
+  end if;
+
+  v_discount_amount := round(v_subtotal * v_discount_percent / 100, 2);
+  v_total := greatest(0, v_subtotal - v_discount_amount);
+  if p_expected_total is not null and round(p_expected_total, 2) <> v_total then
+    raise exception 'Le prix ou le code promo a changé. Vérifiez le nouveau total avant de recommander.';
+  end if;
+
+  insert into public.orders (
+    customer_id, customer_name, customer_phone, customer_address,
+    payment_method, payment_proof, discount_code, discount_percent,
+    discount_amount, partner_name, final_total, status
+  )
+  values (
+    v_user_id, btrim(p_customer_name), btrim(p_customer_phone), btrim(p_customer_address),
+    p_payment_method, p_payment_proof, v_discount_code, v_discount_percent,
+    v_discount_amount, v_partner_name, v_total, 'pending'
+  )
+  returning id, created_at into v_order_id, v_order_created_at;
+
+  for v_item in select value from jsonb_array_elements(v_canonical_items) as items(value)
+  loop
+    insert into public.order_items (
+      order_id, product_id, video_id, product_title, product_price, quantity
+    )
+    values (
+      v_order_id,
+      nullif(v_item ->> 'productId', '')::bigint,
+      nullif(v_item ->> 'videoId', '')::bigint,
+      v_item ->> 'productTitle',
+      (v_item ->> 'productPrice')::numeric,
+      (v_item ->> 'quantity')::integer
+    );
+  end loop;
+
+  return query select
+    v_order_id, v_order_created_at, v_canonical_items, v_total,
+    v_discount_percent, v_discount_amount, v_partner_name;
+end;
+$$;
+
+revoke all on function public.create_order(text, text, text, public.payment_method, text, text, numeric, jsonb) from public;
+grant execute on function public.create_order(text, text, text, public.payment_method, text, text, numeric, jsonb) to authenticated;
+
+-- Un utilisateur ne peut envoyer qu'en son nom et ne peut modifier que son indicateur de lecture.
+drop policy if exists messages_insert_owner_or_admin on public.messages;
+drop policy if exists messages_insert_user on public.messages;
+drop policy if exists messages_insert_admin on public.messages;
+create policy messages_insert_user on public.messages
+for insert to authenticated with check (
+  user_id = auth.uid() and sender_id = auth.uid() and receiver_role = 'admin'
+  and not is_read_by_admin and is_read_by_user
+);
+create policy messages_insert_admin on public.messages
+for insert to authenticated with check (
+  public.is_admin() and sender_id = auth.uid() and receiver_role = 'user'
+  and is_read_by_admin and not is_read_by_user
+);
+
+create or replace function public.guard_message_updates()
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  if auth.role() = 'authenticated' and not public.is_admin()
+    and (to_jsonb(new) - 'is_read_by_user') is distinct from (to_jsonb(old) - 'is_read_by_user') then
+    raise exception 'Un utilisateur ne peut modifier que son indicateur de lecture.';
+  end if;
+  return new;
+end;
+$$;
+
+drop trigger if exists messages_guard_user_updates on public.messages;
+create trigger messages_guard_user_updates
+before update on public.messages
+for each row execute function public.guard_message_updates();
+
+-- Les métriques agrégées sont publiques, sans exposer les identifiants des utilisateurs.
+drop policy if exists video_views_read_admin on public.video_views;
+create policy video_views_read_admin on public.video_views
+for select to authenticated using (public.is_admin());
+drop policy if exists video_likes_read_admin on public.video_likes;
+create policy video_likes_read_admin on public.video_likes
+for select to authenticated using (public.is_admin());
+
+create or replace function public.get_video_engagement_counts(p_video_ids bigint[])
+returns table (video_id bigint, view_count bigint, like_count bigint)
+language sql
+stable
+security definer
+set search_path = public
+as $$
+  select videos.id,
+    count(distinct video_views.user_id),
+    count(distinct video_likes.user_id)
+  from public.videos
+  left join public.video_views on video_views.video_id = videos.id
+  left join public.video_likes on video_likes.video_id = videos.id
+  where p_video_ids is not null and videos.id = any(p_video_ids)
+  group by videos.id;
+$$;
+
+revoke all on function public.get_video_engagement_counts(bigint[]) from public;
+grant execute on function public.get_video_engagement_counts(bigint[]) to anon, authenticated;

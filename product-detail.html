@@ -299,7 +299,7 @@
                     <div id="mobile-money-fields" style="display: none; padding: 1rem; border: 1px solid var(--bordure); border-radius: 10px; margin-bottom: 1rem;">
                         <p id="payment-numbers-message" style="margin-top: 0;">Numéro de dépôt en cours de chargement...</p>
                         <label for="payment-proof">Capture ou photo du reçu MTN *</label>
-                        <input type="file" id="payment-proof" accept="image/*" />
+                        <input type="file" id="payment-proof" accept="image/jpeg,image/png,image/webp" />
                     </div>
                     <p id="cash-payment-message" style="display: none; color: var(--accent-2);">Vous payerez à la livraison</p>
                     <div class="form-group">
@@ -320,7 +320,7 @@
             </div>
         </div>
 
-        <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+        <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.116.0" integrity="sha384-JBR+x8blGwjDRO63aHCGiZMD4VNiTR4ZUGA+N6ZKLf3zNt1fK8IBpcgPaMrxqWBp" crossorigin="anonymous"></script>
         <script src="js/supabase-client.js"></script>
         <script src="js/app.js"></script>
         <script>
@@ -355,6 +355,7 @@
 
           <div class="product-details">
             <div class="product-category">${escapeHtml(product.category)}</div>
+            ${product.location ? `<div class="product-location">${escapeHtml(product.location)}</div>` : ""}
             <h1 class="product-title">${escapeHtml(product.title)}</h1>
             <div class="product-price">${product.price} FCFA</div>
             <p class="product-description">${escapeHtml(product.description)}</p>
@@ -551,8 +552,8 @@
                     alert("Veuillez joindre la capture ou la photo du reçu MTN.");
                     return;
                 }
-                if (proofFile && (proofFile.size > 5 * 1024 * 1024 || !proofFile.type.startsWith("image/"))) {
-                    alert("La preuve doit être une image de 5 Mo maximum.");
+                if (proofFile && (proofFile.size > 5 * 1024 * 1024 || !["image/jpeg", "image/png", "image/webp"].includes(proofFile.type))) {
+                    alert("La preuve doit être une image JPEG, PNG ou WebP de 5 Mo maximum.");
                     return;
                 }
 

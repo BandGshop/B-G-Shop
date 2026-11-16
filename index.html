@@ -103,7 +103,7 @@
         </section>
 
         <section class="market-main" id="trending">
-            <div class="market-heading"><div><p class="eyebrow">Sélection B&G</p><h2>Articles tendances</h2></div><p id="result-count"></p></div>
+            <div class="market-heading"><div><p class="eyebrow">Sélection B&G</p><h2 id="market-section-title">Articles tendances</h2></div><p id="result-count"></p></div>
             <div class="market-grid" id="trending-products"></div>
         </section>
     </main>
@@ -142,7 +142,7 @@
         <a href="settings.html"><strong>⚙</strong><span>Paramètres</span></a>
     </nav>
 
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.116.0" integrity="sha384-JBR+x8blGwjDRO63aHCGiZMD4VNiTR4ZUGA+N6ZKLf3zNt1fK8IBpcgPaMrxqWBp" crossorigin="anonymous"></script>
     <script src="js/supabase-client.js"></script>
     <script src="js/app.js"></script>
     <script>
@@ -154,9 +154,17 @@
         let productsLoadFailed = false;
         function renderProducts() {
             const query = document.getElementById('product-search').value.trim().toLowerCase();
-            const products = app.getProducts().filter((product) => !query || `${product.title} ${product.category} ${product.description}`.toLowerCase().includes(query));
+            const locationQuery = document.getElementById('location-search').value.trim().toLowerCase();
+            const isSearching = Boolean(query || locationQuery);
+            const sourceProducts = isSearching ? app.getProducts() : app.getTrendingProducts();
+            const products = sourceProducts.filter((product) => {
+                const searchableText = `${product.title} ${product.category} ${product.description}`.toLowerCase();
+                return (!query || searchableText.includes(query))
+                    && (!locationQuery || String(product.location || '').toLowerCase().includes(locationQuery));
+            });
+            document.getElementById('market-section-title').textContent = isSearching ? 'Résultats de recherche' : 'Articles tendances';
             document.getElementById('result-count').textContent = `${products.length} article${products.length > 1 ? 's' : ''}`;
-            document.getElementById('trending-products').innerHTML = products.length ? products.map((product, index) => `<article class="market-card" onclick="goToProduct(${Number(product.id)})"><img src="${escapeHtml(product.image || 'images/ad-placeholder.svg')}" alt="${escapeHtml(product.title)}" width="640" height="420" loading="${index === 0 ? 'eager' : 'lazy'}" decoding="async" ${index === 0 ? 'fetchpriority="high"' : ''} /><div class="market-card-info"><div class="market-card-category">${escapeHtml(product.category)}</div><h3>${escapeHtml(product.title)}</h3><p>${escapeHtml(product.description).slice(0, 72)}...</p><div class="market-card-footer"><div class="market-price">${Number(product.price)} FCFA</div><button class="cart-add" onclick="event.stopPropagation(); addToCart(${Number(product.id)})">Ajouter</button></div></div></article>`).join('') : productsLoadFailed ? '<p role="alert">Impossible de charger les articles. Vérifiez votre connexion et réessayez.</p>' : productsLoaded ? '<p>Aucun article ne correspond à votre recherche.</p>' : '<p role="status">Chargement des articles…</p>';
+            document.getElementById('trending-products').innerHTML = products.length ? products.map((product, index) => `<article class="market-card" onclick="goToProduct(${Number(product.id)})"><img src="${escapeHtml(product.image || 'images/ad-placeholder.svg')}" alt="${escapeHtml(product.title)}" width="640" height="420" loading="${index === 0 ? 'eager' : 'lazy'}" decoding="async" ${index === 0 ? 'fetchpriority="high"' : ''} /><div class="market-card-info"><div class="market-card-category">${escapeHtml(product.category)}</div>${product.location ? `<div class="market-card-location">${escapeHtml(product.location)}</div>` : ''}<h3>${escapeHtml(product.title)}</h3><p>${escapeHtml(product.description).slice(0, 72)}...</p><div class="market-card-footer"><div class="market-price">${Number(product.price)} FCFA</div><button class="cart-add" onclick="event.stopPropagation(); addToCart(${Number(product.id)})">Ajouter</button></div></div></article>`).join('') : productsLoadFailed ? '<p role="alert">Impossible de charger les articles. Vérifiez votre connexion et réessayez.</p>' : productsLoaded ? (isSearching ? '<p>Aucun article ne correspond à votre recherche.</p>' : '<p>Aucun article tendance pour le moment.</p>') : '<p role="status">Chargement des articles…</p>';
         }
         function addToCart(productId) { app.addToCart(productId); window.location.href = 'panier.html'; }
         function goToProduct(productId) { window.location.href = `product-detail.html?id=${productId}`; }
@@ -168,6 +176,7 @@
             renderCategories();
             renderProducts();
             document.getElementById('product-search').addEventListener('input', renderProducts);
+            document.getElementById('location-search').addEventListener('input', renderProducts);
             window.addEventListener('bgshop-products-synced', () => {
                 productsLoaded = true;
                 renderProducts();

@@ -34,6 +34,8 @@ const interfacePhrases = [
   ['Rechercher un article', 'Search for an item', 'Buscar un artículo', 'Поиск товара', 'Buscar um produto', 'Artikel suchen', '搜索商品'],
   ['Sélection B&G', 'B&G picks', 'Selección B&G', 'Выбор B&G', 'Seleção B&G', 'B&G-Auswahl', 'B&G精选'],
   ['Articles tendances', 'Trending items', 'Productos populares', 'Популярные товары', 'Produtos em alta', 'Beliebte Artikel', '热门商品'],
+  ['Résultats de recherche', 'Search results', 'Resultados de búsqueda', 'Результаты поиска', 'Resultados da pesquisa', 'Suchergebnisse', '搜索结果'],
+  ['Aucun article tendance pour le moment.', 'No trending items yet.', 'Aún no hay artículos populares.', 'Популярных товаров пока нет.', 'Ainda não há artigos em alta.', 'Noch keine Trendartikel.', '暂无热门商品。'],
   ['article', 'item', 'artículo', 'товар', 'produto', 'Artikel', '件商品'],
   ['articles', 'items', 'artículos', 'товаров', 'produtos', 'Artikel', '件商品'],
   ['Ajouter', 'Add', 'Añadir', 'Добавить', 'Adicionar', 'Hinzufügen', '添加'],
@@ -246,6 +248,7 @@ const app = {
       createdDate: order.created_at,
       items: (order.order_items || []).map((item) => ({
         productId: item.product_id,
+        videoId: item.video_id,
         productTitle: item.product_title,
         productPrice: item.product_price,
         quantity: item.quantity
@@ -266,7 +269,7 @@ const app = {
       id: message.id,
       userId: message.user_id,
       userEmail: profiles?.find((profile) => profile.id === message.user_id)?.email || message.user_id,
-      sender: profiles?.find((profile) => profile.id === message.sender_id)?.role === 'admin'
+      sender: message.receiver_role === 'user'
         ? 'admin'
         : profiles?.find((profile) => profile.id === message.sender_id)?.email || message.sender_id,
       receiver: message.receiver_role === 'admin' ? 'admin' : profiles?.find((profile) => profile.id === message.user_id)?.email || message.user_id,
@@ -284,12 +287,14 @@ const app = {
       const adVideoIds = new Set((adLinks || []).map((link) => link.video_id));
       const contentVideos = videos.filter((video) => !adVideoIds.has(video.id));
       const videoIds = contentVideos.map((video) => video.id);
-      const [{ data: views }, { data: likes }, { data: comments }, { data: favorites }] = await Promise.all([
+      const [{ data: views }, { data: likes }, { data: comments }, { data: favorites }, { data: engagementCounts, error: engagementError }] = await Promise.all([
         client.from('video_views').select('*').in('video_id', videoIds),
         client.from('video_likes').select('*').in('video_id', videoIds),
         client.from('video_comments').select('*').in('video_id', videoIds),
-        client.from('video_favorites').select('*').in('video_id', videoIds)
+        client.from('video_favorites').select('*').in('video_id', videoIds),
+        client.rpc('get_video_engagement_counts', { p_video_ids: videoIds })
       ]);
+      if (engagementError) throw new Error(`Impossible de charger les statistiques vidéo : ${engagementError.message}`);
       localStorage.setItem('bgshop_videos', JSON.stringify(contentVideos.map((video) => ({
         id: video.id,
         title: video.title,
@@ -297,6 +302,8 @@ const app = {
         price: video.price,
         videoUrl: video.video_url,
         postedDate: video.created_at,
+        viewCount: Number((engagementCounts || []).find((item) => item.video_id === video.id)?.view_count || 0),
+        likeCount: Number((engagementCounts || []).find((item) => item.video_id === video.id)?.like_count || 0),
         views: (views || []).filter((item) => item.video_id === video.id).map((item) => ({ userId: item.user_id, date: item.created_at })),
         likes: (likes || []).filter((item) => item.video_id === video.id).map((item) => ({ userId: item.user_id, date: item.created_at })),
         comments: (comments || []).filter((item) => item.video_id === video.id).map((item) => ({ id: item.id, userId: item.user_id, text: item.text, date: item.created_at }))
@@ -368,7 +375,7 @@ const app = {
     const syncVersion = ++this.productsSyncVersion;
     const { data, error } = await client
       .from('products')
-      .select('id, title, category, price, image, description, trending, created_at')
+      .select('id, title, category, price, image, description, location, trending, created_at')
       .order('created_at', { ascending: false });
     if (syncVersion !== this.productsSyncVersion) return;
     if (error || !data) {
@@ -893,6 +900,7 @@ const app = {
         price: product.price,
         image: product.image,
         description: product.description,
+        location: product.location || '',
         trending: Boolean(product.trending)
       }).select('*').single();
       if (error) {
@@ -959,49 +967,44 @@ const app = {
         productPrice: Number(order.productPrice || 0),
         quantity: 1
       }];
-    const total = Number(order.finalTotal ?? items.reduce(
+    let total = Number(order.finalTotal ?? items.reduce(
       (sum, item) => sum + Number(item.productPrice || 0) * Number(item.quantity || 1),
       0
     ));
+    let savedItems = items;
     const client = window.bgSupabase?.getClient();
     if (client) {
-      if (!/^[0-9a-f-]{36}$/i.test(String(order.userId || ''))) {
-        throw new Error('Vous devez être connecté pour passer une commande.');
-      }
-      const { data, error } = await client.from('orders').insert({
-        customer_id: order.userId,
-        customer_name: order.customerName,
-        customer_phone: order.customerPhone,
-        customer_address: order.customerAddress,
-        payment_method: order.paymentMethod,
-        payment_proof: order.paymentProof || null,
-        discount_code: order.discountCode || null,
-        discount_percent: Number(order.discountPercent || 0),
-        discount_amount: Number(order.discountAmount || 0),
-        partner_name: order.partnerName || null,
-        final_total: total
-      }).select('id, created_at').single();
+      const { data, error } = await client.rpc('create_order', {
+        p_customer_name: order.customerName,
+        p_customer_phone: order.customerPhone,
+        p_customer_address: order.customerAddress,
+        p_payment_method: order.paymentMethod || 'cash_on_delivery',
+        p_payment_proof: order.paymentProof || null,
+        p_discount_code: order.discountCode || null,
+        p_expected_total: Number.isFinite(Number(order.finalTotal)) ? Number(order.finalTotal) : null,
+        p_items: items.map((item) => ({
+          productId: item.productId || null,
+          videoId: item.videoId || null,
+          quantity: Number(item.quantity || 1)
+        }))
+      });
       if (error) throw new Error(`Impossible d’enregistrer la commande : ${error.message}`);
-      const { error: itemError } = await client.from('order_items').insert(items.map((item) => ({
-        order_id: data.id,
-        product_id: item.productId || null,
-        product_title: item.productTitle,
-        product_price: Number(item.productPrice || 0),
-        quantity: Number(item.quantity || 1)
-      })));
-      if (itemError) {
-        await client.from('orders').delete().eq('id', data.id);
-        throw new Error(`Impossible d’enregistrer l’article commandé : ${itemError.message}`);
-      }
-      order.id = data.id;
-      order.createdDate = data.created_at;
+      const savedOrder = Array.isArray(data) ? data[0] : data;
+      if (!savedOrder) throw new Error('Supabase n’a retourné aucune commande créée.');
+      savedItems = savedOrder.order_items;
+      total = Number(savedOrder.final_total);
+      order.id = savedOrder.order_id;
+      order.createdDate = savedOrder.order_created_at;
+      order.discountPercent = Number(savedOrder.discount_percent);
+      order.discountAmount = Number(savedOrder.discount_amount);
+      order.partnerName = savedOrder.partner_name;
     } else {
       order.id = Math.max(...orders.map(o => o.id || 0), 0) + 1;
     }
 
-    order.items = items;
+    order.items = savedItems;
     order.finalTotal = total;
-    order.productTitle = items.map((item) => `${item.productTitle}${item.quantity > 1 ? ` × ${item.quantity}` : ''}`).join(', ');
+    order.productTitle = savedItems.map((item) => `${item.productTitle}${item.quantity > 1 ? ` × ${item.quantity}` : ''}`).join(', ');
     orders.push(order);
     localStorage.setItem('bgshop_orders', JSON.stringify(orders));
     return order;
@@ -1187,6 +1190,8 @@ const app = {
     const videos = this.getVideos();
     video.views = [];
     video.likes = [];
+    video.viewCount = 0;
+    video.likeCount = 0;
     video.comments = [];
     const client = window.bgSupabase?.getClient();
     let user = this.checkAuth();
@@ -1251,6 +1256,9 @@ const app = {
           name: user.name,
           date: new Date().toISOString(),
         });
+        video.viewCount = Number.isFinite(Number(video.viewCount))
+          ? Number(video.viewCount) + 1
+          : video.views.length;
         localStorage.setItem('bgshop_videos', JSON.stringify(videos));
       } finally {
         this.pendingVideoViews.delete(viewKey);
@@ -1264,6 +1272,7 @@ const app = {
     const video = videos.find((v) => v.id === videoId);
     if (!video) return null;
     video.likes = Array.isArray(video.likes) ? video.likes : [];
+    const likeCount = Number.isFinite(Number(video.likeCount)) ? Number(video.likeCount) : video.likes.length;
     const likedIndex = video.likes.findIndex((like) => String(like.userId) === String(user.id) || like.userEmail === user.email);
     const client = window.bgSupabase?.getClient();
     if (client && user?.id) {
@@ -1277,6 +1286,7 @@ const app = {
     }
     if (likedIndex >= 0) {
       video.likes.splice(likedIndex, 1);
+      video.likeCount = Math.max(0, likeCount - 1);
     } else {
       video.likes.push({
         userId: user.id,
@@ -1284,6 +1294,7 @@ const app = {
         name: user.name,
         date: new Date().toISOString(),
       });
+      video.likeCount = likeCount + 1;
     }
     localStorage.setItem('bgshop_videos', JSON.stringify(videos));
     return video;
@@ -1494,7 +1505,9 @@ const app = {
         user_id: threadUserId,
         sender_id: user.id,
         receiver_role: message.receiver === 'admin' ? 'admin' : 'user',
-        text: message.text
+        text: message.text,
+        is_read_by_admin: message.isReadByAdmin,
+        is_read_by_user: message.isReadByUser
       }).select('id, created_at').single();
       if (error) throw new Error(`Impossible d’envoyer le message : ${error.message}`);
       message.id = data.id;
@@ -1784,9 +1797,30 @@ function updateAuthUI() {
 
   if (authContainer) {
     if (user) {
-      authContainer.innerHTML = user.role === 'admin'
-        ? '<a href="admin.html" class="admin-space-button">Espace admin</a>'
-        : `<a class="profile-chip" href="settings.html"><span class="profile-avatar">${user.profileImage ? `<img src="${user.profileImage}" alt="Photo de ${user.name}">` : '♙'}</span><span>${user.name.split(' ')[0]}</span></a>`;
+      if (user.role === 'admin') {
+        authContainer.innerHTML = '<a href="admin.html" class="admin-space-button">Espace admin</a>';
+      } else {
+        const profileLink = document.createElement('a');
+        profileLink.className = 'profile-chip';
+        profileLink.href = 'settings.html';
+
+        const avatar = document.createElement('span');
+        avatar.className = 'profile-avatar';
+        const profileImage = String(user.profileImage || '');
+        if (/^data:image\/(?:jpeg|png|webp);base64,[A-Za-z0-9+/]+={0,2}$/.test(profileImage)) {
+          const image = document.createElement('img');
+          image.src = profileImage;
+          image.alt = `Photo de ${String(user.name || '')}`;
+          avatar.appendChild(image);
+        } else {
+          avatar.textContent = '♙';
+        }
+
+        const name = document.createElement('span');
+        name.textContent = String(user.name || user.email || '').trim().split(/\s+/)[0];
+        profileLink.append(avatar, name);
+        authContainer.replaceChildren(profileLink);
+      }
     } else {
       authContainer.innerHTML = `
         <span class="profile-avatar">♙</span>

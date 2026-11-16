@@ -215,7 +215,7 @@
             </div>
         </div>
 
-        <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+        <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.116.0" integrity="sha384-JBR+x8blGwjDRO63aHCGiZMD4VNiTR4ZUGA+N6ZKLf3zNt1fK8IBpcgPaMrxqWBp" crossorigin="anonymous"></script>
         <script src="js/supabase-client.js"></script>
         <script src="js/app.js"></script>
         <script>
@@ -294,6 +294,7 @@
             <img src="${escapeHtml(product.image || "images/ad-placeholder.svg")}" alt="${escapeHtml(product.title)}" class="product-image" loading="lazy" decoding="async" />
             <div class="product-info">
               <div class="product-category">${escapeHtml(product.category)}</div>
+              ${product.location ? `<div class="product-location">${escapeHtml(product.location)}</div>` : ""}
               <div class="product-title">${escapeHtml(product.title)}</div>
               <div class="product-description">${escapeHtml(product.description || "").substring(0, 60)}...</div>
               <div class="product-price">${product.price} FCFA</div>

@@ -77,18 +77,17 @@ Site web/
 ```
 
 ### Stockage des Données
-- **localStorage** - Stockage local du navigateur
-- **Collections:**
-  - `bgshop_users` - Utilisateurs/Admin
-  - `bgshop_products` - Articles
-  - `bgshop_orders` - Commandes
-  - `bgshop_currentUser` - Session active
+- **Supabase PostgreSQL et Auth** - Source de vérité pour les données et les comptes en production
+- **localStorage** - Cache local d’affichage, non sécurisé pour les opérations de production
+- Les sessions d’authentification sont gérées par Supabase Auth ; le cache local ne contient pas les mots de passe.
+- Les écritures de commandes passent par une fonction PostgreSQL qui recalcule les prix et les réductions.
 
 ### Technologies Utilisées
 - **HTML5** - Structure sémantique
 - **CSS3** - Design moderne avec variables CSS
 - **JavaScript Vanilla** - Logique applicative
-- **LocalStorage API** - Persistance des données
+- **Supabase JS** - Authentification, accès aux données et stockage des médias
+- **LocalStorage API** - Cache de compatibilité local
 
 ---
 

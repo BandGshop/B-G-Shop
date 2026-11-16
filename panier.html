@@ -37,14 +37,14 @@
       <div id="checkout-mobile-money" hidden>
         <p id="checkout-payment-numbers">Chargement des numéros de paiement…</p>
         <label for="checkout-payment-proof">Preuve de paiement</label>
-        <input id="checkout-payment-proof" type="file" accept="image/*" />
+        <input id="checkout-payment-proof" type="file" accept="image/jpeg,image/png,image/webp" />
       </div>
       <button id="checkout-submit" class="btn btn-primaire" type="submit">Envoyer la commande</button>
       <button class="btn btn-secondaire" type="button" onclick="closeCheckout()">Annuler</button>
       <p id="checkout-status" role="status" aria-live="polite"></p>
     </form>
   </main>
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.116.0" integrity="sha384-JBR+x8blGwjDRO63aHCGiZMD4VNiTR4ZUGA+N6ZKLf3zNt1fK8IBpcgPaMrxqWBp" crossorigin="anonymous"></script>
   <script src="js/supabase-client.js"></script>
   <script src="js/app.js"></script>
   <script>
@@ -137,8 +137,8 @@
         document.getElementById('checkout-status').textContent = 'Veuillez joindre la preuve de paiement.';
         return;
       }
-      if (proofFile && (proofFile.size > 5 * 1024 * 1024 || !proofFile.type.startsWith('image/'))) {
-        document.getElementById('checkout-status').textContent = 'La preuve doit être une image de 5 Mo maximum.';
+      if (proofFile && (proofFile.size > 5 * 1024 * 1024 || !['image/jpeg', 'image/png', 'image/webp'].includes(proofFile.type))) {
+        document.getElementById('checkout-status').textContent = 'La preuve doit être une image JPEG, PNG ou WebP de 5 Mo maximum.';
         return;
       }
 

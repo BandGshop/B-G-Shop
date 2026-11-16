@@ -25,7 +25,7 @@ Le site possède maintenant un schéma PostgreSQL prêt pour Supabase dans [`sup
 1. Créez un projet sur [Supabase](https://supabase.com/).
 2. Ouvrez **SQL Editor**, collez le contenu de `supabase/schema.sql`, puis exécutez-le.
 3. Dans **Authentication > Users**, créez le compte administrateur avec l’adresse de votre choix.
-4. Dans **Table Editor > profiles**, remplacez le rôle de ce compte par `admin` et vérifiez que son adresse email correspond exactement à celle de **Authentication > Users**.
+4. Dans le **SQL Editor**, attribuez le rôle `admin` à ce compte et vérifiez que son adresse email correspond exactement à celle de **Authentication > Users**.
 5. Récupérez l’URL du projet et la clé publique dans **Project Settings > API** pour connecter les pages à Supabase.
 
 Si le compte existe déjà dans **Authentication > Users** mais n'apparaît pas dans `profiles`, exécutez d'abord `supabase/complete-migration.sql`. Pour donner les droits administrateur à une adresse précise, exécutez ensuite cette requête dans **SQL Editor** en remplaçant l'adresse :
@@ -38,9 +38,9 @@ where lower(email) = lower('votre-adresse@example.com');
 
 La connexion admin utilise ensuite exactement la même page `login.html` que les autres comptes. L'accès à `admin.html` est accordé uniquement si la ligne correspondante contient `role = 'admin'`.
 
-Le schéma active la sécurité RLS : les produits et vidéos sont consultables publiquement, tandis que les commandes, messages, paniers et réglages restent limités à leur propriétaire ou à un administrateur. Le site fonctionne encore en mode local tant que la couche JavaScript Supabase n’est pas branchée aux pages.
+Le schéma active la sécurité RLS : les produits et vidéos sont consultables publiquement, tandis que les commandes, messages, paniers et réglages restent limités à leur propriétaire ou à un administrateur. Les rôles administrateur ne doivent être attribués que depuis le SQL Editor ou un environnement de confiance.
 
-Si vous avez déjà exécuté l’ancien schéma, exécutez uniquement [`supabase/complete-migration.sql`](supabase/complete-migration.sql) dans Supabase SQL Editor. Il recrée les profils Auth manquants, ajoute les favoris vidéo et le paiement, et réserve la publication de vidéos et leur stockage aux administrateurs sans recréer les tables existantes.
+Si vous avez déjà exécuté l’ancien schéma, exécutez [`supabase/complete-migration.sql`](supabase/complete-migration.sql) dans Supabase SQL Editor. Cette migration recrée les profils Auth manquants, ajoute les favoris vidéo, le paiement et la localisation des articles, puis applique les contrôles de rôle, messagerie et commandes ainsi que les statistiques vidéo agrégées.
 
 Pour vider le catalogue de démonstration avant de publier vos vrais articles, exécutez ensuite [`supabase/clear-demo-products.sql`](supabase/clear-demo-products.sql) dans Supabase SQL Editor.
 
@@ -48,7 +48,7 @@ Pour vider le catalogue de démonstration avant de publier vos vrais articles, e
 
 Dans [js/supabase-client.js](js/supabase-client.js), remplacez `YOUR_PROJECT_REF` par l’identifiant de votre projet et `YOUR_SUPABASE_ANON_KEY` par la clé **anon public** copiée dans **Project Settings > API**. Ne mettez jamais la clé `service_role` dans ce fichier.
 
-Le site charge désormais les données depuis Supabase et utilise Supabase Auth pour les connexions et inscriptions. `localStorage` sert seulement de cache de compatibilité hors ligne; la source distante et les écritures sont Supabase.
+Le site charge les données depuis Supabase et utilise Supabase Auth pour les connexions et inscriptions. `localStorage` sert de cache d’affichage ; en mode local sans Supabase, les données ne sont pas protégées et ne doivent pas être utilisées en production.
 
 ### Confirmation email et limite d'envoi
 
@@ -159,12 +159,9 @@ Connexion → Admin → Ajouter Article → Gérer Articles → Gérer Commandes
 
 ## 💾 Données Stockées Localement
 
-Les données sont sauvegardées dans le localStorage du navigateur:
-- Utilisateurs et authentification
-- Articles postés
-- Commandes des clients
+Le navigateur conserve un cache local pour l’affichage hors ligne. Les comptes, articles et commandes de production sont stockés dans Supabase.
 
-**⚠️ Important**: Si vous videz le cache/cookies, les données seront perdues.
+**Important** : vider le cache local ne supprime pas les données Supabase, mais les pages devront se reconnecter pour les recharger.
 
 ---
 
@@ -198,7 +195,7 @@ Pour remplacer les images placeholder par les vôtres:
 ## ❓ Foire Aux Questions
 
 **Q: Comment ajouter d'autres administrateurs?**
-A: Modifiez le fichier `js/app.js` dans la fonction `ensureDefaultData()` pour ajouter plus d'admins.
+A: Créez leur compte Supabase Auth, puis attribuez le rôle `admin` depuis Supabase SQL Editor avec un compte de confiance.
 
 **Q: Comment faire un lien WhatsApp réel?**
 A: Remplacez `1234567890` par votre numéro WhatsApp business dans `product-detail.html`.
@@ -207,7 +204,7 @@ A: Remplacez `1234567890` par votre numéro WhatsApp business dans `product-deta
 A: Oui, tant que vous ne videz pas le cache du navigateur.
 
 **Q: Puis-je migrer vers une vraie base de données?**
-A: Oui! Remplacez les `localStorage` par des appels API.
+A: Le site utilise déjà Supabase en production. Configurez ses identifiants dans `js/supabase-client.js` et exécutez les migrations SQL.
 
 ---
 

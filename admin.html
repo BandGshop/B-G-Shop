@@ -493,6 +493,11 @@
                             </div>
 
                             <div class="form-group">
+                                <label for="product-location">Pays ou ville</label>
+                                <input type="text" id="product-location" maxlength="160" placeholder="Ex. Brazzaville" />
+                            </div>
+
+                            <div class="form-group">
                                 <label for="product-price">Prix (FCFA) *</label>
                                 <input type="number" id="product-price" step="0.01" required />
                             </div>
@@ -702,7 +707,7 @@
             </div>
         </div>
 
-        <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+        <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.116.0" integrity="sha384-JBR+x8blGwjDRO63aHCGiZMD4VNiTR4ZUGA+N6ZKLf3zNt1fK8IBpcgPaMrxqWBp" crossorigin="anonymous"></script>
         <script src="js/supabase-client.js"></script>
         <script src="js/app.js"></script>
         <script>
@@ -792,6 +797,7 @@
                     const product = {
                         title: document.getElementById("product-title").value,
                         category: document.getElementById("product-category").value,
+                        location: document.getElementById("product-location").value.trim(),
                         price: parseFloat(document.getElementById("product-price").value),
                         image: compressedImage && !window.bgSupabase?.getClient()
                             ? await app.getVideoDataURL(compressedImage)
@@ -855,7 +861,7 @@
           <div style="padding: 1rem; border-radius: 12px; background: rgba(255, 255, 255, 0.07); border: 1px solid var(--bordure);">
             <img src="${escapeHtml(p.image || "images/ad-placeholder.svg")}" style="width: 100%; height: 150px; object-fit: cover; border-radius: 8px; margin-bottom: 1rem;" alt="${escapeHtml(p.title)}" />
             <h3 style="margin: 0.5rem 0;">${escapeHtml(p.title)}</h3>
-            <p style="margin: 0.3rem 0; color: var(--texte-secondaire); font-size: 0.9rem;">${escapeHtml(p.category)}</p>
+            <p style="margin: 0.3rem 0; color: var(--texte-secondaire); font-size: 0.9rem;">${escapeHtml(p.category)}${p.location ? ` · ${escapeHtml(p.location)}` : ""}</p>
             <p style="margin: 0.3rem 0; color: var(--accent); font-weight: 600;">${p.price} FCFA</p>
             <p style="margin: 0.5rem 0; color: var(--texte-secondaire); font-size: 0.85rem;">${escapeHtml(p.description || "").substring(
                 0,
@@ -895,6 +901,13 @@
                 }
             }
 
+            function renderPaymentProof(paymentProof) {
+                if (!/^data:image\/(?:jpeg|png|webp);base64,[A-Za-z0-9+/]+={0,2}$/.test(String(paymentProof || ""))) {
+                    return "-";
+                }
+                return `<a href="${paymentProof}" target="_blank" rel="noopener noreferrer">Voir</a>`;
+            }
+
             function loadOrders() {
                 const orders = app.getOrders();
                 const tbody = document.getElementById("orders-tbody");
@@ -920,7 +933,7 @@
               </span>
             </td>
             <td>${new Date(order.createdDate).toLocaleDateString("fr-FR")}</td>
-            <td>${order.paymentProof ? `<a href="${escapeHtml(order.paymentProof)}" target="_blank" rel="noopener">Voir</a>` : "-"}</td>
+            <td>${renderPaymentProof(order.paymentProof)}</td>
             <td>
               <button onclick="updateOrderStatus(${order.id}, '${
                         order.status === "pending" ? "completed" : "pending"
@@ -1166,8 +1179,8 @@
             function loadVideoManagement() {
                 const videos = app.getVideos().slice().sort((a, b) => new Date(b.postedDate) - new Date(a.postedDate));
                 const list = document.getElementById("video-list");
-                const totalViews = videos.reduce((sum, video) => sum + (video.views?.length || 0), 0);
-                const totalLikes = videos.reduce((sum, video) => sum + (video.likes?.length || 0), 0);
+                const totalViews = videos.reduce((sum, video) => sum + Number(video.viewCount ?? video.views?.length ?? 0), 0);
+                const totalLikes = videos.reduce((sum, video) => sum + Number(video.likeCount ?? video.likes?.length ?? 0), 0);
                 const totalComments = videos.reduce((sum, video) => sum + (video.comments?.length || 0), 0);
 
                 document.getElementById("video-management-total").textContent = videos.length;
@@ -1195,8 +1208,8 @@
                                 <p style="margin: 1rem 0 0.5rem; color: var(--accent); font-weight: 700;">${video.price == null ? "Prix non renseigné" : `${Number(video.price)} FCFA`}</p>
                                 <p style="margin: 0.5rem 0; color: var(--texte-secondaire);">${escapeHtml(video.description)}</p>
                                 <div class="video-meta">
-                                    <span>${video.views?.length || 0} vues</span>
-                                    <span>${video.likes?.length || 0} likes</span>
+                                    <span>${Number(video.viewCount ?? video.views?.length ?? 0)} vues</span>
+                                    <span>${Number(video.likeCount ?? video.likes?.length ?? 0)} likes</span>
                                     <span>${video.comments?.length || 0} commentaires</span>
                                 </div>
                             </div>

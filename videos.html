@@ -318,7 +318,7 @@
             </div>
         </div>
 
-        <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+        <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.116.0" integrity="sha384-JBR+x8blGwjDRO63aHCGiZMD4VNiTR4ZUGA+N6ZKLf3zNt1fK8IBpcgPaMrxqWBp" crossorigin="anonymous"></script>
         <script src="js/supabase-client.js"></script>
         <script src="js/app.js"></script>
         <script>
@@ -435,7 +435,7 @@
                         userId: user.id,
                         userEmail: user.email,
                         items: [{
-                            productId: null,
+                            videoId: selectedVideo.id,
                             productTitle: selectedVideo.title,
                             productPrice: Number(selectedVideo.price),
                             quantity: 1
@@ -466,13 +466,14 @@
                 feed.innerHTML = videos.map((video) => {
                     const likes = video.likes || [];
                     const comments = video.comments || [];
+                    const likeCount = Number(video.likeCount ?? likes.length);
                     const liked = user && likes.some((like) => like.userId === user.id || like.userEmail === user.email);
                     const favorited = favorites.includes(String(video.id));
                     return `
                         <article class="video-card" data-video-id="${Number(video.id)}">
                             <video controls muted playsinline preload="metadata" src="${escapeVideoHtml(video.videoUrl)}" aria-label="${escapeVideoHtml(video.title)}"></video>
                             <div class="video-actions">
-                                <button class="video-action ${liked ? "active" : ""}" onclick="toggleLike(${video.id})" title="J'aime">♥<small>${likes.length}</small></button>
+                                <button class="video-action ${liked ? "active" : ""}" onclick="toggleLike(${video.id})" title="J'aime">♥<small>${likeCount}</small></button>
                                 <button class="video-action" onclick="toggleComments(${video.id})" title="Commentaires">💬<small>${comments.length}</small></button>
                                 <button class="video-action ${favorited ? "active" : ""}" onclick="toggleFavorite(${video.id})" title="Ajouter aux favoris">★</button>
                                 ${video.price != null && Number.isFinite(Number(video.price)) ? `<button class="video-action" onclick="openOrderModal(${video.id})" title="Commander">🛒</button>` : ""}

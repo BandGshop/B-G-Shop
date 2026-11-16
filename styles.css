@@ -356,6 +356,12 @@ body.has-global-taskbar {
   margin-top: .7rem;
 }
 
+.product-location,
+.market-card-location {
+  color: var(--texte-secondaire, var(--muted));
+  font-size: .82rem;
+}
+
 .product-action {
   flex: 1;
   padding: .45rem .55rem;

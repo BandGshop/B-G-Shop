@@ -1189,9 +1189,12 @@ const app = {
     video.likes = [];
     video.comments = [];
     const client = window.bgSupabase?.getClient();
-    const user = this.checkAuth();
+    let user = this.checkAuth();
     if (client) {
-      if (!user?.id) throw new Error('Vous devez être connecté pour publier une vidéo.');
+      user = await this.getAuthenticatedUser();
+      if (!user?.id || user.role !== 'admin') {
+        throw new Error('Seul un administrateur peut publier une vidéo.');
+      }
       let videoUrl = video.videoUrl;
       if (video.videoFile || videoUrl?.startsWith('data:')) {
         const blob = video.videoFile || await fetch(videoUrl).then((response) => response.blob());
@@ -1212,6 +1215,9 @@ const app = {
       video.postedDate = data.created_at;
       video.videoUrl = data.video_url;
     } else {
+      if (user?.role !== 'admin') {
+        throw new Error('Seul un administrateur peut publier une vidéo.');
+      }
       if (video.videoFile) video.videoUrl = await this.getVideoDataURL(video.videoFile);
       video.id = Math.max(...videos.map((v) => v.id || 0), 0) + 1;
       video.postedDate = new Date().toISOString();

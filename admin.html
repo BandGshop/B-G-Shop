@@ -307,8 +307,13 @@
                 font-weight: 600;
             }
 
+            .orders-table-wrap,
             .users-table-wrap {
                 overflow-x: auto;
+            }
+
+            .orders-table-wrap .orders-table {
+                min-width: 900px;
             }
 
             .users-table {
@@ -547,24 +552,26 @@
                         <h1>Commandes</h1>
                     </div>
 
-                    <table class="orders-table">
-                        <thead>
-                            <tr>
-                                <th>ID</th>
-                                <th>Client</th>
-                                <th>Téléphone</th>
-                                <th>Article</th>
-                                <th>Paiement</th>
-                                <th>Statut</th>
-                                <th>Date</th>
-                                <th>Preuve</th>
-                                <th>Action</th>
-                            </tr>
-                        </thead>
-                        <tbody id="orders-tbody">
-                            <!-- Orders will be loaded here -->
-                        </tbody>
-                    </table>
+                    <div class="orders-table-wrap">
+                        <table class="orders-table">
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Client</th>
+                                    <th>Téléphone</th>
+                                    <th>Article</th>
+                                    <th>Paiement</th>
+                                    <th>Statut</th>
+                                    <th>Date</th>
+                                    <th>Preuve</th>
+                                    <th>Action</th>
+                                </tr>
+                            </thead>
+                            <tbody id="orders-tbody">
+                                <!-- Orders will be loaded here -->
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
 
                 <div id="users" class="admin-section">
@@ -646,7 +653,7 @@
                     <div class="dashboard-grid">
                         <div class="stat-card">
                             <h3>Vidéos publiées</h3>
-                            <div class="stat-value" id="total-videos">0</div>
+                            <div class="stat-value" id="video-management-total">0</div>
                         </div>
                         <div class="stat-card">
                             <h3>Vues totales</h3>
@@ -1163,7 +1170,7 @@
                 const totalLikes = videos.reduce((sum, video) => sum + (video.likes?.length || 0), 0);
                 const totalComments = videos.reduce((sum, video) => sum + (video.comments?.length || 0), 0);
 
-                document.getElementById("total-videos").textContent = videos.length;
+                document.getElementById("video-management-total").textContent = videos.length;
                 document.getElementById("total-video-views").textContent = totalViews;
                 document.getElementById("total-video-likes").textContent = totalLikes;
                 document.getElementById("total-video-comments").textContent = totalComments;

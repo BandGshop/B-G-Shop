@@ -329,8 +329,8 @@ for update to authenticated using (user_id = auth.uid() or public.is_admin());
 
 create policy videos_read_public on public.videos
 for select using (true);
-create policy videos_insert_authenticated on public.videos
-for insert to authenticated with check (author_id = auth.uid() or public.is_admin());
+create policy videos_insert_admin on public.videos
+for insert to authenticated with check (author_id = auth.uid() and public.is_admin());
 create policy videos_update_owner_or_admin on public.videos
 for update to authenticated using (author_id = auth.uid() or public.is_admin());
 create policy videos_delete_owner_or_admin on public.videos
@@ -370,7 +370,7 @@ for all to authenticated using (public.is_admin()) with check (public.is_admin()
 create policy video_storage_read_public on storage.objects
 for select using (bucket_id = 'videos');
 create policy video_storage_upload_authenticated on storage.objects
-for insert to authenticated with check (bucket_id = 'videos');
+for insert to authenticated with check (bucket_id = 'videos' and public.is_admin());
 create policy video_storage_delete_admin on storage.objects
 for delete to authenticated using (bucket_id = 'videos' and public.is_admin());
 

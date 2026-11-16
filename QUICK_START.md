@@ -40,7 +40,7 @@ La connexion admin utilise ensuite exactement la même page `login.html` que les
 
 Le schéma active la sécurité RLS : les produits et vidéos sont consultables publiquement, tandis que les commandes, messages, paniers et réglages restent limités à leur propriétaire ou à un administrateur. Le site fonctionne encore en mode local tant que la couche JavaScript Supabase n’est pas branchée aux pages.
 
-Si vous avez déjà exécuté l’ancien schéma, exécutez uniquement [`supabase/complete-migration.sql`](supabase/complete-migration.sql) dans Supabase SQL Editor. Il recrée les profils Auth manquants et ajoute les favoris vidéo, le paiement et le stockage sécurisé des vidéos sans recréer les tables existantes.
+Si vous avez déjà exécuté l’ancien schéma, exécutez uniquement [`supabase/complete-migration.sql`](supabase/complete-migration.sql) dans Supabase SQL Editor. Il recrée les profils Auth manquants, ajoute les favoris vidéo et le paiement, et réserve la publication de vidéos et leur stockage aux administrateurs sans recréer les tables existantes.
 
 Pour vider le catalogue de démonstration avant de publier vos vrais articles, exécutez ensuite [`supabase/clear-demo-products.sql`](supabase/clear-demo-products.sql) dans Supabase SQL Editor.
 
